@@ -1,7 +1,7 @@
 #include "Init.h"
 
 void GPIO_config(void){
-  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitTypeDef GPIO_InitStructure = {0};
   
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA,ENABLE);
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB,ENABLE);
@@ -24,11 +24,6 @@ void GPIO_config(void){
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
-  //key PA10
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
   //key PA0 PA4 PA5
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_4|GPIO_Pin_5;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
@@ -44,6 +39,12 @@ void GPIO_config(void){
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
   GPIO_ResetBits(GPIOA,GPIO_Pin_2 | GPIO_Pin_3);
+#if (HardVer == 100)
+  //key PA10
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
   //Power EN PA9
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -55,11 +56,36 @@ void GPIO_config(void){
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_Init(GPIOF, &GPIO_InitStructure);
   GPIO_ResetBits(GPIOF,GPIO_Pin_0 | GPIO_Pin_1);
+#elif (HardVer == 101)
+  //key PF0
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOF, &GPIO_InitStructure);
+  //Power EN PF1
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+  GPIO_Init(GPIOF, &GPIO_InitStructure);
+  GPIO_SetBits(GPIOA,GPIO_Pin_9);
+  //PA9 PA10 串口
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
+  
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+#endif
 }
 
 
+#if (HardVer == 100)
+
 void SWDInit_Master(void){
-  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitTypeDef GPIO_InitStructure = {0};
   
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;  
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -75,7 +101,7 @@ void SWDInit_Master(void){
 }
 
 void SWDInit_Slave(void){
-  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitTypeDef GPIO_InitStructure = {0};
   
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
@@ -90,17 +116,48 @@ void SWDInit_Slave(void){
   PAout(14)=1;
 }
 
+#endif
+
+void USART1Init(u32 BaudRate)
+{
+    USART_InitTypeDef USART_InitStructure = {0};
+    USART_DeInit(USART1);
+    
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+
+    USART_InitStructure.USART_BaudRate = BaudRate;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode =  USART_Mode_Tx | USART_Mode_Rx;
+
+    USART_Init(USART1, &USART_InitStructure);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+    USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
+    USART_Cmd(USART1, ENABLE);
+}
+
 void NVIC_Config(void){
-  NVIC_InitTypeDef NVIC_InitStructure;
+  NVIC_InitTypeDef NVIC_InitStructure = {0};
 
   NVIC_InitStructure.NVIC_IRQChannel = TIM1_BRK_UP_TRG_COM_IRQn;
   NVIC_InitStructure.NVIC_IRQChannelPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
+  
+  NVIC_InitStructure.NVIC_IRQChannel =  USART1_IRQn;	
+  NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);  
 }
 
+
+
+
+
 void Tim1Init(u16 per,u16 psc){
-  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure = {0};
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
   
   TIM_TimeBaseStructure.TIM_Period = per;
@@ -148,8 +205,8 @@ void Tim3InitPWM(u16 per,u16 psc){
 
 void Tim3InitCAP(u16 per,u16 psc){
   
-  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
-  TIM_ICInitTypeDef TIM_ICInitStructure;
+  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure = {0};
+  TIM_ICInitTypeDef TIM_ICInitStructure = {0};
   
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
@@ -175,7 +232,7 @@ void Tim3InitCAP(u16 per,u16 psc){
 
 
 void ADC_Config(void){
-  ADC_InitTypeDef     ADC_InitStructure;
+  ADC_InitTypeDef     ADC_InitStructure = {0};
   /* ADC1 DeInit */  
   ADC_DeInit(ADC1);  
    /* ADC1 Periph clock enable */
@@ -199,10 +256,10 @@ void ADC_Config(void){
   
   /* ADC Calibration */
   ADC_GetCalibrationFactor(ADC1);
-  /* ADC DMA request in circular mode */
-  ADC_DMARequestModeConfig(ADC1, ADC_DMAMode_Circular);
-  /* Enable ADC_DMA */
-  ADC_DMACmd(ADC1, ENABLE);  
+//  /* ADC DMA request in circular mode */
+//  ADC_DMARequestModeConfig(ADC1, ADC_DMAMode_Circular);
+//  /* Enable ADC_DMA */
+//  ADC_DMACmd(ADC1, ENABLE);  
   /* Enable the ADC peripheral */
   ADC_Cmd(ADC1, ENABLE);     
   /* Wait the ADRDY flag */
@@ -210,30 +267,38 @@ void ADC_Config(void){
   /* ADC1 regular Software Start Conv */ 
   ADC_StartOfConversion(ADC1);
   
-  DMA_Config();
+//  DMA_Config();
 }
 
 
-void DMA_Config(void){
-  DMA_InitTypeDef   DMA_InitStructure;
-  /* DMA1 clock enable */
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1 , ENABLE);
-  /* DMA1 Channel1 Config */
-  DMA_DeInit(DMA1_Channel1);
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)ADC1_Address;
-  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)DMABUF;
-  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-  DMA_InitStructure.DMA_BufferSize = ADC_BUF_Lg;
-  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
-  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-  DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
-  DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;  
-  DMA_Init(DMA1_Channel1, &DMA_InitStructure);
-  /* DMA1 Channel1 enable */
-  DMA_Cmd(DMA1_Channel1, ENABLE);
+//void DMA_Config(void){
+//  DMA_InitTypeDef   DMA_InitStructure = {0};
+//  /* DMA1 clock enable */
+//  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1 , ENABLE);
+//  /* DMA1 Channel1 Config */
+//  DMA_DeInit(DMA1_Channel1);
+//  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)ADC1_Address;
+//  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)DMABUF;
+//  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+//  DMA_InitStructure.DMA_BufferSize = ADC_BUF_Lg;
+//  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+//  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+//  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
+//  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+//  DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+//  DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+//  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;  
+//  DMA_Init(DMA1_Channel1, &DMA_InitStructure);
+//  /* DMA1 Channel1 enable */
+//  DMA_Cmd(DMA1_Channel1, ENABLE);
+//}
+
+
+u16 ReadAdc(void){
+  while (ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) == RESET);
+  ADC_StartOfConversion(ADC1);
+  while (ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);
+  return ADC_GetConversionValue(ADC1);
 }
 
 void SysTickConfig(void){
@@ -247,11 +312,22 @@ void InitAll(void){
   ADC_Config();         //ADC引脚初始化
 }
 
+void IWDG_Config(void){
+  RCC_LSICmd(ENABLE);  
+  IWDG_Enable();
+  IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
+  IWDG_SetPrescaler(IWDG_Prescaler_256);
+  IWDG_SetReload(0xff);
+  IWDG_ReloadCounter();
+}
+
 void InitTimer(void){
+//  IWDG_Config();
   SysTickConfig();      //1ms SysTick
   Tim1Init(TimeBase-1,1-1);    //定时器中断，用于LED刷新1khz
   Tim3InitPWM(FullVal-1,1-1);//LED PWM 17.7Khz
   NVIC_Config();
+  USART1Init(38400);
 }
 
 

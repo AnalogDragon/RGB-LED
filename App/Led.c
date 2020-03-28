@@ -11,11 +11,17 @@ void DispLedFresh(void){
     Color = GetNextColor();
     SetPwm(Color.R,Color.G,Color.B);
   }
-  else if(OutputState == 2){    //显示当前操作的值
-    SetPwm(Color.R,Color.G,Color.B);
+  else if(OutputState == 2){    //不由中断控制
+    ;
   }
-  else if(OutputState == 3){    //校准结束绿色灯
-    SetPwm(0,450,0);
+  else if(OutputState == 3){ //单色模式   //校准结束绿色灯
+    if(ColorPoint.bit.PlayMode == 1){
+    }
+    else if(ColorPoint.bit.PlayMode == 2){
+    }
+    else{
+      SetPwm(SiglFrame[0].Color.R,SiglFrame[0].Color.G,SiglFrame[0].Color.B);
+    }
   }
   else{ //关闭显示
     OutputIndex = 0;
@@ -48,6 +54,12 @@ void FlashLED(u8 Time,u8 R,u8 B){
   }
   StateLed(R,B);
   delay_ms(15);
+  StateLed(0,0);
+}
+
+void PullLED(u16 Time,u8 R,u8 B){
+  StateLed(R,B);
+  delay_ms(Time);
   StateLed(0,0);
 }
 
@@ -87,7 +99,7 @@ Color_REG GetNextColor(void){
   else
     Color =  Color1;
   
-  OutputFrame++;
+  OutputFrame += (1+Speed);
   return Color;
 }
 

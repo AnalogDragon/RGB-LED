@@ -4,6 +4,7 @@
 void GetAKey(AKeyState_REG *KeyBuf,u8 IOState);
 
 void KeyTsak(void){
+  if(Time.Flag10ms == 0)return;
   GetAKey(&Key[0],KEY0);
   GetAKey(&Key[1],KEY1);
   GetAKey(&Key[2],KEY2);

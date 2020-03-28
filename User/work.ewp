@@ -1954,6 +1954,12 @@
       <name>$PROJ_DIR$\main.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\..\App\Sci.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\App\Sci.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\..\App\Vardefine.c</name>
     </file>
     <file>

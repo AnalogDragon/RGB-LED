@@ -25,7 +25,7 @@ void InitTimer(void);
 void SWDInit_Master(void);
 void SWDInit_Slave(void);
 
-
+u16 ReadAdc(void);
 
 
 #endif

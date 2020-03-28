@@ -108,6 +108,7 @@ void PendSV_Handler(void)
   * @retval None
   */
 void USART1_IRQHandler(void){
+  UartIntTask();
 }
 
 

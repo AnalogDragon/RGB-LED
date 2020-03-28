@@ -4,15 +4,23 @@
 #define FLASH_START_ADDR        ((uint32_t)0x08003C00)   /* Start @ of user Flash area */
 #define FLASH_PAGE_SIZE         ((uint32_t)0x00000400)   /* FLASH Page Size */
 
+#define Addr1 0
+#define Addr2 100
+#define Addr3 120
+
+
 u8 table[200];
 
 void SaveAll(void){
   u8 i;
   u8 *p = (u8*)UserFrame;
   for(i=0;i<sizeof(UserFrame);i++)
-    table[i] = p[i];
-  table[i] = (TimeBase>>8)&0xFF;
-  table[i+1] = TimeBase&0xFF;
+    table[Addr1+i] = p[i];
+  p = (u8*)&ColorPoint;
+  for(i=0;i<sizeof(ColorPoint);i++)
+    table[Addr2+i] = p[i];
+  table[Addr3] = (TimeBase>>8)&0xFF;
+  table[Addr3+1] = TimeBase&0xFF;
   FlashWrite((Uint16*)table,0,sizeof(table)/2);
 }
 
@@ -20,14 +28,18 @@ void LoadAll(void){
   u8 i;
   u8 *p = (u8*)UserFrame;
   FlashRead((Uint16*)table,0,sizeof(table)/2);
-  TimeBase = table[sizeof(UserFrame)+1]|(table[sizeof(UserFrame)]<<8);
+  TimeBase = table[Addr3+1]|(table[Addr3]<<8);
   if((TimeBase>8400) || (TimeBase<7600)){
     TimeBase = 8000;
+    ColorPoint.all = 0x001F1F47;
     SaveAll();
     return;
   }
   for(i=0;i<sizeof(UserFrame);i++)
-    p[i] = table[i];
+    p[i] = table[Addr1+i];
+  p = (u8*)&ColorPoint;
+  for(i=0;i<sizeof(ColorPoint);i++)
+    p[i] = table[Addr2+i];
 }
 
 

@@ -14,7 +14,7 @@ LeaveTargetRunning=_ 0
 stlinkserialNo=79E3012A
 stlinkfoundProbes=
 [DebugChecksum]
-Checksum=869965323
+Checksum=-733170015
 [Exceptions]
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
@@ -27,8 +27,9 @@ Fmt0=Color_REG-B	3	0
 Fmt1=Color_REG-G	3	0
 Fmt2=Color_REG-R	3	0
 Fmt3=Color_REG-Z	3	0
-Fmt4=Frame_REG-Mode	1	0
-Fmt5=Frame_REG-Time	1	0
+Fmt4=Frame_REG-Mode	3	0
+Fmt5=Frame_REG-Time	3	0
+Fmt6=union ColorPoint_UNI-all	4	0
 [array_types]
 Fmt0=u8[100]	3	0
 Fmt1=u8[200]	4	0
@@ -45,11 +46,12 @@ Fmt8={W}42:LED3	3	0
 Fmt9={W}42:LED4	3	0
 Fmt10={W}42:LED4o	3	0
 Fmt11={W}42:LED5	3	0
-Fmt12={W}42:OutputDuty	3	0
-Fmt13={W}42:OutputState	3	0
-Fmt14={W}42:PowerMode	3	0
-Fmt15={W}42:aaa	3	0
-Fmt16={W}42:bbb	3	0
+Fmt12={W}42:NowList	3	0
+Fmt13={W}42:OutputDuty	3	0
+Fmt14={W}42:OutputState	3	0
+Fmt15={W}42:PowerMode	3	0
+Fmt16={W}42:aaa	3	0
+Fmt17={W}42:bbb	3	0
 [Log file]
 LoggingEnabled=_ 0
 LogFile=_ ""

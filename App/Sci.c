@@ -1,287 +1,315 @@
 #include "Sci.h"
+#include "string.h"
 
-/*
- * 数据格式
- * head  Addr  length data   check
- * 1byte 1byte 1byte  xbyte  2byte
- * head = 0xAA
- * length = x + 2
- * Addr 广播帧 = 0无回复/0xFF回复 = LocAddr 本机回复
- * check = CRC(head + length + data)
- *
- * */
+UART_DATA_Def UART_DATA = {0};
 
-/*
- * 输入char
- * 输入值：串口数据指针
- * 返回值：0成功 1失败
- * */
-Uint32 SciDelayBuf;
-Uint8 UsartDataReady = 0;
-Uint8 UsartData;
-Uint8 SciDelay;
-Uint16 ErrTime;
 
-Uint8 GetByte(Uint8 *data){
-    SciDelayBuf = 0;
-    while(UsartDataReady == 0){
-        SciDelayBuf++;
-        if(SciDelayBuf>110000)return 1;    //1.05s超时
+void UartIntTask(void){
+  u8 temp = 0;
+  if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET){
+    temp = USART_ReceiveData(USART1);
+    UART_DATA.RecBuf[UART_DATA.RecPoint] = temp;
+    UART_DATA.RecPoint++;
+    if(UART_DATA.RecPoint >= MaxUartLen){ //接收完成
+      UART_DATA.RecPoint = 0;
     }
-        UsartDataReady = 0;
-    *data = UsartData;
+    UART_DATA.RecTime = Time.Cnt1ms;
+  }
+  if(USART_GetFlagStatus(USART1, USART_FLAG_ORE) != RESET){
+    temp = USART_ReceiveData(USART1);
+    USART_ClearFlag(USART1, USART_FLAG_ORE);
+  }
+  if(USART_GetFlagStatus(USART1,USART_FLAG_TXE) != RESET){
+    if(UART_DATA.SendPoint < UART_DATA.SendLen){
+      USART_SendData(USART1,UART_DATA.SendBuf[UART_DATA.SendPoint]);
+      UART_DATA.SendPoint++;
+    }
+    else{
+      UART_DATA.SendLen = 0;
+      UART_DATA.SendPoint = 0;
+      USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
+    }
+  }
+}
+
+void SendData(u8 Len){
+  if(Len > MaxUartLen || Len == 0)
+    return;
+  
+  UART_DATA.SendLen = Len;
+  UART_DATA.SendPoint = 0;
+  USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
+}
+
+
+u8 GetNum(Frame_REG *Framebuf){
+  u8 step = 0;
+  u8 flag = 0;
+  u32 temp = 0;
+  for(u8 i=0;i<UART_DATA.RecLen-2;i++){
+    if(UART_DATA.RecBuf[i]>='0' && UART_DATA.RecBuf[i]<='9'){
+      temp = temp*10 + (UART_DATA.RecBuf[i]-'0');
+      flag = 1;
+    }
+    else if(UART_DATA.RecBuf[i] == ',' || UART_DATA.RecBuf[i] == ' '){
+      switch(step++){
+      case 0:if(temp<=450)Framebuf->Color.R=temp;else return 1;break;
+      case 1:if(temp<=450)Framebuf->Color.G=temp;else return 1;break;
+      case 2:if(temp<=450)Framebuf->Color.B=temp;else return 1;break;
+      case 3:if(temp<=2)Framebuf->Mode=temp;else return 1;break;
+      case 4:if(temp<60000)Framebuf->Time=temp;else return 1;break;
+      default:return 1;
+      }
+      flag = temp = 0;
+    }
+    else return 1;//Error
+  }
+  if(flag && step == 4 && temp<60000){
+    Framebuf->Time=temp;
     return 0;
+  }
+  if(step == 5 && flag == 0)return 0;
+  return 1;
 }
 
-Uint8 handed = 0;//是否成功握手标记
-
-/*
- * 输入一帧
- * 返回值：0成功 1失败
- * */
-Uint8 GetPacket(void){
-    Uint8 i,buf,ComAddrBuf,time=0;
-    Uint16 CRCData = 0xffff;
-
-    do{
-        if(GetByte(&buf)){
-            //超时处理
-            time++;
-            ErrTime++;
-            if(handed){
-              if(time>=10){
-                time = 0;
-                SendState(IDLE,Success);//发送自己空闲
-              }
-            }else{
-                JumpToApp(1);
-            }
-        }
-        if(buf != 0xAA){
-          ErrTime++;
-          if(ErrTime>600)
-            JumpToApp(0);
-        }
+u8 GetNum2(void){
+  u32 temp = 0;
+  for(u8 i=0;i<UART_DATA.RecLen-2;i++){
+    if(UART_DATA.RecBuf[i]>='0' && UART_DATA.RecBuf[i]<='9'){
+      temp = temp*10 + (UART_DATA.RecBuf[i]-'0');
     }
-    while(buf != 0xAA);//等待数据包头
-    SciDelay = SciDelayBuf&0xFF;
-
-    handed = 1;//成功收到过一个AA就判断为握手成功
-    CRCCheck(&CRCData,0xAA);
-    
-    //获取地址
-    if( GetByte(&buf) ) return 1;
-    CRCCheck(&CRCData,buf);
-    ComAddrBuf = buf;  //地址
-    
-    if( GetByte(&buf) ) return 1;//数据长度
-    CRCCheck(&CRCData,buf);
-    SciBuf.RxLeng = buf-2;        //减去CRC
-
-    for(i = 0 ; i < SciBuf.RxLeng ; i++){//接收数据，最后2Byte为CRC
-        if( GetByte(&buf) ) return 1;
-        CRCCheck(&CRCData,buf);
-        SciBuf.RxBuf[i] = buf;
-    }
-    
-    if(GetByte(&buf))return 1;        //2Byte CRC,LSB
-    CRCData ^= buf;
-    if(GetByte(&buf))return 1;        //MSB
-    CRCData ^= buf<<8;
-
-#ifdef IsTest
-    if(buf == 0){        //debug
-        ErrTime = 0;
-        if(ComAddrBuf){
-            if(ComAddrBuf == 0xFF)
-                ComAddrOnce = 1;
-            else
-                ComAddr = ComAddrBuf;
-        }
-        if(ComAddr == LocAddr || ComAddrBuf == 0 || ComAddrBuf == 0xFF){
-            UnlockData();
-            delay(2500);
-            return 0;
-        }
-    }
-#endif
-
-    if(CRCData == 0){
-        ErrTime = 0;
-        if(ComAddrBuf){
-            if(ComAddrBuf == 0xFF)
-                ComAddrOnce = 1;
-            else
-                ComAddr = ComAddrBuf;
-        }
-        if(ComAddr == LocAddr || ComAddrBuf == 0 || ComAddrBuf == 0xFF){
-            UnlockData();
-            return 0;
-        }
-    }
-    ErrTime++;
+    else return 1;
+  }
+  if((temp>8400) || (temp<7600))
     return 1;
+  
+  TimeBase = temp;
+  return 0;
 }
 
 
-/*
- * 数据解密
- * 调用前需验证CRC
- * */
-void UnlockData(void){
-    Uint8 i,j,buf0;
-    Uint8 buf[16];
-    Uint8 buf1[16];
-    if(SciBuf.RxLeng < 5){                //长度小于5时仅异或B
-        for(i=0;i<SciBuf.RxLeng;i++){
-            SciBuf.RxBuf[i] ^= BXOR;
-        }
-    }
-    else{                                //长度大于5时，先用A2计算位移，再异或A1
-        for(i = 0 ; i < SciBuf.RxLeng/16 ; i++){
-            strcopy(&buf[0],&SciBuf.RxBuf[i*16],16);
-            for(j = 0 ; j < (Ran&0xF) ; j++){            //操作次数 2-5
-                //先循环左移3再换位
-                strcopy(&buf1[0],&buf[3],13);
-                strcopy(&buf1[13],&buf[0],3);
-                buf0 = buf1[0];
-                buf1[0] = buf1[(Ran>>4)&0xf];
-                buf1[(Ran>>4)&0xf] = buf0;
-                strcopy(&buf[0],&buf1[0],16);
-            }
-            strcopy(&SciBuf.RxBuf[i*16],&buf[0],16);
-        }
 
-        for(i=0;i<SciBuf.RxLeng;i++){    //异或
-            if(i%2)
-                SciBuf.RxBuf[i] ^= AXORL;    //奇数
-            else
-                SciBuf.RxBuf[i] ^= AXORH;
-        }
-    }
+const u8 Table_Data[23] = {"[000,000,000,0,00000]\r\n"};
+const u8 Table_Data2[8] = {"[8000]\r\n"};
+void RepeatAll(void){
+  for(u8 i=0;i<10;i++){
+    if(UserFrame[i].Mode == 0 || UserFrame[i].Time == 0)break;
+    while(UART_DATA.SendLen);
+    memcpy(UART_DATA.SendBuf,Table_Data,sizeof(Table_Data));
+    UART_DATA.SendBuf[1] ='0'+UserFrame[i].Color.R/100%10;
+    UART_DATA.SendBuf[2] ='0'+UserFrame[i].Color.R/10%10;
+    UART_DATA.SendBuf[3] ='0'+UserFrame[i].Color.R%10;
+    UART_DATA.SendBuf[5] ='0'+UserFrame[i].Color.G/100%10;
+    UART_DATA.SendBuf[6] ='0'+UserFrame[i].Color.G/10%10;
+    UART_DATA.SendBuf[7] ='0'+UserFrame[i].Color.G%10;
+    UART_DATA.SendBuf[9] ='0'+UserFrame[i].Color.B/100%10;
+    UART_DATA.SendBuf[10]='0'+UserFrame[i].Color.B/10%10;
+    UART_DATA.SendBuf[11]='0'+UserFrame[i].Color.B%10;
+    UART_DATA.SendBuf[13]='0'+UserFrame[i].Mode%10;
+    UART_DATA.SendBuf[15]='0'+UserFrame[i].Time/10000%10;
+    UART_DATA.SendBuf[16]='0'+UserFrame[i].Time/1000%10;
+    UART_DATA.SendBuf[17]='0'+UserFrame[i].Time/100%10;
+    UART_DATA.SendBuf[18]='0'+UserFrame[i].Time/10%10;
+    UART_DATA.SendBuf[19]='0'+UserFrame[i].Time%10;
+    SendData(sizeof(Table_Data));
+  }
+  while(UART_DATA.SendLen);
+  memcpy(UART_DATA.SendBuf,Table_Data2,sizeof(Table_Data2));
+  UART_DATA.SendBuf[1] ='0'+TimeBase/1000%10;
+  UART_DATA.SendBuf[2] ='0'+TimeBase/100%10;
+  UART_DATA.SendBuf[3] ='0'+TimeBase/10%10;
+  UART_DATA.SendBuf[4] ='0'+TimeBase%10;
+  SendData(sizeof(Table_Data2));
 }
-/*
- * 数据加密
- * 调用后需计算CRC
- * */
-/*void LockData(void){
-    Uint8 i,j,buf0;
-    Uint8 buf[16];
-    Uint8 buf1[16];
-    if(SciBuf.TxLeng < 5){                //长度小于5时仅异或B
-        for(i=0;i<SciBuf.TxLeng;i++){
-            SciBuf.TxBuf[i] ^= BXOR;
-        }
-    }
-    else{                                //长度大于5时，先用A2计算位移，再异或A1        
-        for(i=0;i<SciBuf.TxLeng;i++){    //异或
-            if(i%2)
-                SciBuf.TxBuf[i] ^= AXORL;    //奇数
-            else
-                SciBuf.TxBuf[i] ^= AXORH;
-        }
-        for(i = 0 ; i < SciBuf.TxLeng/16 ; i++){
-            strcopy(&buf[0],&SciBuf.TxBuf[i*16],16);
-            for(j = 0 ; j < (Ran&0xF) ; j++){            //操作次数 2-5
-                //先换位再右移
-                buf0 = buf[0];
-                buf[0] = buf[(Ran>>4)&0xf];
-                buf[(Ran>>4)&0xf] = buf0;
-                strcopy(&buf1[0],&buf[13],3);
-                strcopy(&buf1[3],&buf[0],13);
-                strcopy(&buf[0],&buf1[0],16);
-            }
-            strcopy(&SciBuf.TxBuf[i*16],&buf[0],16);
-        }
 
+const u8 Table_Hello[9] = {"Hello\r\n\r\n"};
+const u8 Table_Hello2[10] = {"OscSet\r\n\r\n"};
+const u8 Table_PointAsk0[27] = {"关键帧0#[R,G,B,Mode,Time]\r\n"};
+const u8 Table_PointAsk1[23] = {"RGB:0~450(亮度:低~高)\r\n"};
+const u8 Table_PointAsk2[28] = {"Mode:0/1/2(帧尾,跳变,渐变)\r\n"};
+const u8 Table_PointAsk3[21] = {"Time:<60000(毫秒)\r\n\r\n"};
 
-    }
-}*/
+const u8 Table_ClarAsk[15] = {"\r\n擦除?[Y/N]:\r\n"};
+const u8 Table_SaveAsk[15] = {"\r\n保存?[Y/N]:\r\n"};
+const u8 Table_Rest[9] = {"重启~\r\n\r\n"};
+const u8 Table_Succ[9] = {"成功!\r\n\r\n"};
 
-/*
- * 发送一帧
- * 调用发送TxBuf内的值
- * */
-void SendPacket(void){
-    Uint8 i;
-    if(SciBuf.TxLeng == 0 || SciBuf.TxLeng>10) 
-        return;//判断发送长度合法
-        
-    PAout(1) = 1;    //占用总线（485 only）
-    delay(50);
-    for(i = 0 ; i < SciBuf.TxLeng ; i++){
-        while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);//等待发送完成
-        USART_SendData(USART2,SciBuf.TxBuf[i]);
-    }
-    while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);//等待发送完成
-    while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET);//等待发送完成
+const u8 Table_Osc[18] = {"时钟[7600~8400]:\r\n"};
+
+const u8 Table_Err[11] = {"你不对劲!\r\n"};
+
+void SendMessage(const u8 *pData,u8 Leng){
+  while(UART_DATA.SendLen);
+  memcpy(UART_DATA.SendBuf,pData,Leng);
+  SendData(Leng);
+}
+
+void SendAskPoint(u8 num){
+  if(num==0){
+    SendMessage(Table_PointAsk1,sizeof(Table_PointAsk1));
+    SendMessage(Table_PointAsk2,sizeof(Table_PointAsk2));
+    SendMessage(Table_PointAsk3,sizeof(Table_PointAsk3));
+  }
+  while(UART_DATA.SendLen);
+  memcpy(UART_DATA.SendBuf,Table_PointAsk0,sizeof(Table_PointAsk0));
+  UART_DATA.SendBuf[6] = num+'0';
+  SendData(sizeof(Table_PointAsk0));
+}
+
+void WaitReset(void){
+  while(UART_DATA.SendLen);
+  NVIC_SystemReset();
+  while(1);
+}
+
+//bytes to send
+void DoSciData(void){
+  static u8 step = 0;
+  static u8 Flame = 0;
+  Frame_REG Framebuf;
+  
+  switch(step){
     
-    PAout(1) = 0;
-    SciBuf.TxLeng = 0;
-}
-
-/*
- * CRC校验函数
- * 输入量 ：( CRC输出累计值指针，需要计进的值）
- * */
-void CRCCheck(Uint16 *Output,Uint8 Input)
-{
-    Uint8 i;
-    *Output ^= Input;
-    for(i=0;i<8;i++){
-          if(*Output & 0x01)
-              *Output = (*Output>>1)^0xa001;
-           else
-               *Output = *Output>>1;
+  case 0:
+    if(memcmp(UART_DATA.RecBuf,Table_Hello,7) == 0){
+      SendMessage(Table_Hello,sizeof(Table_Hello));
+      if(NowList){      //to GetData
+        Flame = 0;
+        memset(UserFrame,0,sizeof(UserFrame));
+        SendAskPoint(Flame);
+        step = 1;       //Input
+      }
+      else{             //to Clear ROM
+        SendMessage(Table_ClarAsk,sizeof(Table_ClarAsk));
+        step = 2;       //Clear
+      }
     }
-}
-
-
-/*
- * 发送状态
- * 输入量：(功能码，成功状态)
- * */
-void SendState(Uint8 step,Uint8 state){
-    Uint16 CRCData = 0xffff;
-    Uint8 i;
-    if((ComAddr != LocAddr)&&(ComAddrOnce != 1)){  //广播帧或者回复帧
-        ComAddrOnce = 0;
-        return;
+    else if(memcmp(UART_DATA.RecBuf,Table_Hello2,8) == 0){
+      SendMessage(Table_Hello2,sizeof(Table_Hello2));
+      SendMessage(Table_Osc,sizeof(Table_Osc));
+      step = 4;
     }
-    ComAddrOnce = 0;
-    SciBuf.TxBuf[0] = 0xAA;
-    SciBuf.TxBuf[1] = LocAddr;
-    SciBuf.TxBuf[2] = 0x04;
-    SciBuf.TxBuf[3] = step^BXOR;
-    SciBuf.TxBuf[4] = state^BXOR;
-
-    SciBuf.TxLeng = 7;
-
-    for(i=0;i<SciBuf.TxLeng-2;i++)
-        CRCCheck(&CRCData,SciBuf.TxBuf[i]);
-
-    SciBuf.TxBuf[5] = CRCData&0xff;            //LSB
-    SciBuf.TxBuf[6] = (CRCData>>8)&0xff;    //MSB
-
-    SendPacket();
-}
-
-
-/*
- * 字符串复制
- * str2复制到str1的位置
- *
- * */
-void strcopy(Uint8 *str1,Uint8 *str2,Uint16 Length){
-    Uint16 i;
-    for(i=0;i<Length;i++){
-        *str1 = *str2;
-        str1++;
-        str2++;
+    break;
+    
+  case 1:
+    OutputState = 0;//Sing Color
+    if(GetNum(&Framebuf)){
+      SendMessage(Table_Err,sizeof(Table_Err));
     }
+    else{
+      OutputState = 2;//Sing Color
+      SetPwm(Framebuf.Color.R,Framebuf.Color.G,Framebuf.Color.B);
+      UserFrame[Flame++] = Framebuf;
+      if((Flame != 0)&&(Flame>=10 || Framebuf.Mode==0 || Framebuf.Time == 0)){  //End!
+        UserFrame[Flame-1].Color.R = UserFrame[Flame-1].Color.G = UserFrame[Flame-1].Color.B = 0;
+        UserFrame[Flame-1].Mode = UserFrame[Flame-1].Time = 0;
+        NowPoint = NowList = 0;
+        if(GetAList(NowList) == 0){
+          SendMessage(Table_SaveAsk,sizeof(Table_SaveAsk));
+          step = 3;
+          OutputState = 1;
+          pFrame = &UserFrame[0];
+        }
+        else{   //检查未通过
+          Flame = 0;
+          memset(UserFrame,0,sizeof(UserFrame));
+          SendAskPoint(Flame);
+          step = 1;       //Input
+        }
+        break;
+      }
+      SendAskPoint(Flame);
+    }
+    break;
+      
+  case 2://Ask Clear
+    if(UART_DATA.RecLen == 3){
+      if(UART_DATA.RecBuf[0] == 'Y' || UART_DATA.RecBuf[0] == 'y'){
+        memset(UserFrame,0,sizeof(UserFrame));
+        SaveAll();//clear
+        SendMessage(Table_Succ,sizeof(Table_Succ));
+        Flame = 0;
+        SendAskPoint(Flame);
+        step = 1;       //Input
+        break;
+      }
+      else if(UART_DATA.RecBuf[0] == 'N' || UART_DATA.RecBuf[0] == 'n'){
+        RepeatAll();
+        SendMessage(Table_Rest,sizeof(Table_Rest));
+        WaitReset();
+      }
+    }
+    SendMessage(Table_Err,sizeof(Table_Err));
+    break;
+    
+  case 3:       //Ask Save
+    if(UART_DATA.RecLen == 3){
+      if(UART_DATA.RecBuf[0] == 'Y' || UART_DATA.RecBuf[0] == 'y'){
+        SaveAll();//clear
+        SendMessage(Table_Succ,sizeof(Table_Succ));
+        RepeatAll();
+        SendMessage(Table_Rest,sizeof(Table_Rest));
+        WaitReset();
+      }
+      else if(UART_DATA.RecBuf[0] == 'N' || UART_DATA.RecBuf[0] == 'n'){
+        Flame = 0;
+        memset(UserFrame,0,sizeof(UserFrame));
+        SendAskPoint(Flame);
+        step = 1;       //Input
+        break;
+      }
+    }
+    SendMessage(Table_Err,sizeof(Table_Err));
+    break;
+    
+  case 4:
+    if(GetNum2() == 0){//Succ
+      SaveAll();//clear
+      SendMessage(Table_Succ,sizeof(Table_Succ));
+      RepeatAll();
+      SendMessage(Table_Rest,sizeof(Table_Rest));
+      WaitReset();
+    }
+    else{
+      SendMessage(Table_Err,sizeof(Table_Err));
+    }
+    break;
+    
+  default:
+    while(UART_DATA.SendLen);
+    NVIC_SystemReset();
+  }
 }
 
-void delay(u16 num){
-  for(num=num;num>0;num--);
+
+void SciMode(void){
+  
+  if(UART_DATA.SendLen)return;
+  
+  if(UART_DATA.RecPoint>=2 && UART_DATA.RecBuf[UART_DATA.RecPoint-1]=='\n' && UART_DATA.RecBuf[UART_DATA.RecPoint-2] == '\r'){
+    UART_DATA.RecLen = UART_DATA.RecPoint;
+    UART_DATA.RecPoint = 0;
+  }
+  else if(UART_DATA.RecPoint && GetDtTime(UART_DATA.RecTime,Time.Cnt1ms) > 10){//10ms TimeOut
+    UART_DATA.RecPoint = 0;
+    UART_DATA.RecLen = 0;
+    for(u8 i=0;i<MaxUartLen;i++)UART_DATA.RecBuf[i] = 0;
+    return;
+  }
+  else return;
+  //Stop Rec
+  USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
+  
+  //Do Link
+  if(UART_DATA.RecLen > 2)
+    DoSciData();
+  FlashLED(1,1,1);
+  
+  //Clear
+  UART_DATA.RecLen = 0;
+  for(u8 i=0;i<MaxUartLen;i++)UART_DATA.RecBuf[i] = 0;
+  
+  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 }
+
 

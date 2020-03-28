@@ -349,20 +349,20 @@ void RCC_AdjustHSI14CalibrationValue(uint8_t HSI14CalibrationValue)
   *         clock cycles.
   * @retval None
   */
-void RCC_HSI14Cmd(FunctionalState NewState)
-{
-  /* Check the parameters */
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-  
-  if (NewState != DISABLE)
-  {
-    RCC->CR2 |= RCC_CR2_HSI14ON;
-  }
-  else
-  {
-    RCC->CR2 &= ~RCC_CR2_HSI14ON;
-  }
-}
+//void RCC_HSI14Cmd(FunctionalState NewState)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_FUNCTIONAL_STATE(NewState));
+//  
+//  if (NewState != DISABLE)
+//  {
+//    RCC->CR2 |= RCC_CR2_HSI14ON;
+//  }
+//  else
+//  {
+//    RCC->CR2 &= ~RCC_CR2_HSI14ON;
+//  }
+//}
 
 /**
   * @brief  Enables or disables the Internal High Speed oscillator request from ADC.
@@ -370,20 +370,20 @@ void RCC_HSI14Cmd(FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
-void RCC_HSI14ADCRequestCmd(FunctionalState NewState)
-{
-  /* Check the parameters */
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-  
-  if (NewState != DISABLE)
-  {
-    RCC->CR2 &= ~RCC_CR2_HSI14DIS;
-  }
-  else
-  {
-    RCC->CR2 |= RCC_CR2_HSI14DIS;
-  }
-}
+//void RCC_HSI14ADCRequestCmd(FunctionalState NewState)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_FUNCTIONAL_STATE(NewState));
+//  
+//  if (NewState != DISABLE)
+//  {
+//    RCC->CR2 &= ~RCC_CR2_HSI14DIS;
+//  }
+//  else
+//  {
+//    RCC->CR2 |= RCC_CR2_HSI14DIS;
+//  }
+//}
 
 /**
   * @brief  Configures the External Low Speed oscillator (LSE).
@@ -428,17 +428,17 @@ void RCC_LSEConfig(uint32_t RCC_LSE)
   *            @arg RCC_LSEDrive_High: LSE oscillator high drive capability.
   * @retval None
   */
-void RCC_LSEDriveConfig(uint32_t RCC_LSEDrive)
-{
-  /* Check the parameters */
-  assert_param(IS_RCC_LSE_DRIVE(RCC_LSEDrive));
-  
-  /* Clear LSEDRV[1:0] bits */
-  RCC->BDCR &= ~(RCC_BDCR_LSEDRV);
-
-  /* Set the LSE Drive */
-  RCC->BDCR |= RCC_LSEDrive;
-}
+//void RCC_LSEDriveConfig(uint32_t RCC_LSEDrive)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_RCC_LSE_DRIVE(RCC_LSEDrive));
+//  
+//  /* Clear LSEDRV[1:0] bits */
+//  RCC->BDCR &= ~(RCC_BDCR_LSEDRV);
+//
+//  /* Set the LSE Drive */
+//  RCC->BDCR |= RCC_LSEDrive;
+//}
 
 /**
   * @brief  Enables or disables the Internal Low Speed oscillator (LSI).
@@ -485,18 +485,18 @@ void RCC_LSICmd(FunctionalState NewState)
   *
   * @retval None
   */
-void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t RCC_PLLMul)
-{
-  /* Check the parameters */
-  assert_param(IS_RCC_PLL_SOURCE(RCC_PLLSource));
-  assert_param(IS_RCC_PLL_MUL(RCC_PLLMul));
-
-  /* Clear PLL Source [16] and Multiplier [21:18] bits */
-  RCC->CFGR &= ~(RCC_CFGR_PLLMULL | RCC_CFGR_PLLSRC);
-
-  /* Set the PLL Source and Multiplier */
-  RCC->CFGR |= (uint32_t)(RCC_PLLSource | RCC_PLLMul);
-}
+//void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t RCC_PLLMul)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_RCC_PLL_SOURCE(RCC_PLLSource));
+//  assert_param(IS_RCC_PLL_MUL(RCC_PLLMul));
+//
+//  /* Clear PLL Source [16] and Multiplier [21:18] bits */
+//  RCC->CFGR &= ~(RCC_CFGR_PLLMULL | RCC_CFGR_PLLSRC);
+//
+//  /* Set the PLL Source and Multiplier */
+//  RCC->CFGR |= (uint32_t)(RCC_PLLSource | RCC_PLLMul);
+//}
 
 /**
   * @brief  Enables or disables the PLL.
@@ -509,20 +509,20 @@ void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t RCC_PLLMul)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
-void RCC_PLLCmd(FunctionalState NewState)
-{
-  /* Check the parameters */
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-  
-  if (NewState != DISABLE)
-  {
-    RCC->CR |= RCC_CR_PLLON;
-  }
-  else
-  {
-    RCC->CR &= ~RCC_CR_PLLON;
-  }
-}
+//void RCC_PLLCmd(FunctionalState NewState)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_FUNCTIONAL_STATE(NewState));
+//  
+//  if (NewState != DISABLE)
+//  {
+//    RCC->CR |= RCC_CR_PLLON;
+//  }
+//  else
+//  {
+//    RCC->CR &= ~RCC_CR_PLLON;
+//  }
+//}
 
 /**
   * @brief  Enables or disables the Internal High Speed oscillator for USB (HSI48).
@@ -535,20 +535,20 @@ void RCC_PLLCmd(FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
-void RCC_HSI48Cmd(FunctionalState NewState)
-{
-  /* Check the parameters */
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-  
-  if (NewState != DISABLE)
-  {
-    RCC->CR2 |= RCC_CR2_HSI48ON;
-  }
-  else
-  {
-    RCC->CR2 &= ~RCC_CR2_HSI48ON;
-  }
-}
+//void RCC_HSI48Cmd(FunctionalState NewState)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_FUNCTIONAL_STATE(NewState));
+//  
+//  if (NewState != DISABLE)
+//  {
+//    RCC->CR2 |= RCC_CR2_HSI48ON;
+//  }
+//  else
+//  {
+//    RCC->CR2 &= ~RCC_CR2_HSI48ON;
+//  }
+//}
 
 /**
   * @brief  Configures the PREDIV1 division factor.
@@ -557,21 +557,21 @@ void RCC_HSI48Cmd(FunctionalState NewState)
   *          This parameter can be RCC_PREDIV1_Divx where x:[1,16]
   * @retval None
   */
-void RCC_PREDIV1Config(uint32_t RCC_PREDIV1_Div)
-{
-  uint32_t tmpreg = 0;
-  
-  /* Check the parameters */
-  assert_param(IS_RCC_PREDIV1(RCC_PREDIV1_Div));
-
-  tmpreg = RCC->CFGR2;
-  /* Clear PREDIV1[3:0] bits */
-  tmpreg &= ~(RCC_CFGR2_PREDIV1);
-  /* Set the PREDIV1 division factor */
-  tmpreg |= RCC_PREDIV1_Div;
-  /* Store the new value */
-  RCC->CFGR2 = tmpreg;
-}
+//void RCC_PREDIV1Config(uint32_t RCC_PREDIV1_Div)
+//{
+//  uint32_t tmpreg = 0;
+//  
+//  /* Check the parameters */
+//  assert_param(IS_RCC_PREDIV1(RCC_PREDIV1_Div));
+//
+//  tmpreg = RCC->CFGR2;
+//  /* Clear PREDIV1[3:0] bits */
+//  tmpreg &= ~(RCC_CFGR2_PREDIV1);
+//  /* Set the PREDIV1 division factor */
+//  tmpreg |= RCC_PREDIV1_Div;
+//  /* Store the new value */
+//  RCC->CFGR2 = tmpreg;
+//}
 
 /**
   * @brief  Enables or disables the Clock Security System.
@@ -584,20 +584,20 @@ void RCC_PREDIV1Config(uint32_t RCC_PREDIV1_Div)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
-void RCC_ClockSecuritySystemCmd(FunctionalState NewState)
-{
-  /* Check the parameters */
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-  
-  if (NewState != DISABLE)
-  {
-    RCC->CR |= RCC_CR_CSSON;
-  }
-  else
-  {
-    RCC->CR &= ~RCC_CR_CSSON;
-  }
-}
+//void RCC_ClockSecuritySystemCmd(FunctionalState NewState)
+//{
+//  /* Check the parameters */
+//  assert_param(IS_FUNCTIONAL_STATE(NewState));
+//  
+//  if (NewState != DISABLE)
+//  {
+//    RCC->CR |= RCC_CR_CSSON;
+//  }
+//  else
+//  {
+//    RCC->CR &= ~RCC_CR_CSSON;
+//  }
+//}
 
 #ifdef STM32F051
 /**

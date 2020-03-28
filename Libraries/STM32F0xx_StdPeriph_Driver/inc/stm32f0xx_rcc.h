@@ -62,7 +62,7 @@ typedef struct
 }RCC_ClocksTypeDef;
 
 /* Exported constants --------------------------------------------------------*/
-
+#define HSIFeq 8000000
 /** @defgroup RCC_Exported_Constants
   * @{
   */

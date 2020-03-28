@@ -7,8 +7,9 @@
 #include "App.h"
 #include "Key.h"
 #include "Led.h"
-#include "main.h"
 #include "Flash.h"
+#include "main.h"
+#include "Sci.h"
 
 
 typedef struct {

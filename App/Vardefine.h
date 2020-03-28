@@ -4,15 +4,17 @@
 #include "head.h"
 
 #define Version 100
+#define HardVer 101
 
-#define ADC_BUF_Lg      40
-#define ADC_Lg          20
 
-#define MaxLength 500;
+//#define ADC_BUF_Lg      20
+#define ADC_Lg          100
 
-extern u16 DMABUF[ADC_BUF_Lg];
-extern float AdcFilter;
+//#define MaxLength 500;
+
+//extern u16 DMABUF[ADC_BUF_Lg];
 extern u16 AdcTable[ADC_Lg];
+extern float AdcFilter;
 
 
 typedef struct{
@@ -40,6 +42,7 @@ extern u8 OutputState;     //输出状态
 extern u8 OutputIndex;     //输出帧
 extern u8 MaxIndex;        //帧数
 extern u16 OutputFrame;    //当前帧时间
+extern u8 Speed;
 
 extern u8 PowerMode;
 
@@ -84,7 +87,7 @@ extern AKeyState_REG Key[4];
 typedef struct{
   Color_REG Color;      //颜色
   u8    Mode;           //变化方法  0:无效点 1:闪变  2:渐变
-  u32   Time;           //耗时
+  u16   Time;           //耗时
 }Frame_REG;
 
 
@@ -92,6 +95,7 @@ extern u8 NowList;
 extern Frame_REG* pFrame;
 extern u8 NowPoint;
 extern Frame_REG UserFrame[10];
+extern Frame_REG SiglFrame[2];
 extern const u8 FrameLength[];
 extern const Frame_REG FactFrame0[];
 extern const Frame_REG FactFrame1[];
@@ -108,5 +112,19 @@ extern Frame_REG *NowAct;
 
 
 /*---------------------------------*/
+
+typedef struct{
+  u32 Hue:8;//色相 0~72
+  u32 Sat:8;//灰度 0~32
+  u32 Brt:8;//明度 0~32
+  u32 PlayMode:8;//常亮/闪/变
+}ColorPoint_REG;
+
+
+union ColorPoint_UNI{
+  u32   all;
+  ColorPoint_REG  bit;
+};
+extern union ColorPoint_UNI ColorPoint;
 
 #endif /* VARDEFINE_H_ */

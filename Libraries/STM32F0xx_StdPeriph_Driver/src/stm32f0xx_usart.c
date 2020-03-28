@@ -236,7 +236,7 @@ void USART_DeInit(USART_TypeDef* USARTx)
 void USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct)
 {
   uint32_t divider = 0, apbclock = 0, tmpreg = 0;
-  RCC_ClocksTypeDef RCC_ClocksStatus;
+//  RCC_ClocksTypeDef RCC_ClocksStatus;
   
   /* Check the parameters */
   assert_param(IS_USART_ALL_PERIPH(USARTx));
@@ -291,25 +291,25 @@ void USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct)
   
   /*---------------------------- USART BRR Configuration -----------------------*/
   /* Configure the USART Baud Rate -------------------------------------------*/
-  RCC_GetClocksFreq(&RCC_ClocksStatus);
-  
-  if (USARTx == USART1)
-  {
-    apbclock = RCC_ClocksStatus.USART1CLK_Frequency;
-  }
-  else if (USARTx == USART2)
-  {
-    apbclock = RCC_ClocksStatus.USART2CLK_Frequency;
-  }
-   else if (USARTx == USART3)
-  {
-    apbclock = RCC_ClocksStatus.USART3CLK_Frequency;
-  }
-  else
-  {
-    apbclock = RCC_ClocksStatus.PCLK_Frequency;
-  }
-  
+//  RCC_GetClocksFreq(&RCC_ClocksStatus);
+//  
+//  if (USARTx == USART1)
+//  {
+//    apbclock = RCC_ClocksStatus.USART1CLK_Frequency;
+//  }
+//  else if (USARTx == USART2)
+//  {
+//    apbclock = RCC_ClocksStatus.USART2CLK_Frequency;
+//  }
+//   else if (USARTx == USART3)
+//  {
+//    apbclock = RCC_ClocksStatus.USART3CLK_Frequency;
+//  }
+//  else
+//  {
+//    apbclock = RCC_ClocksStatus.PCLK_Frequency;
+//  }
+  apbclock = HSIFeq;
   /* Determine the integer part */
   if ((USARTx->CR1 & USART_CR1_OVER8) != 0)
   {
