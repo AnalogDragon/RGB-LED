@@ -4,9 +4,9 @@
 
 void main(void){
   InitAll();
-  LoadAll();
-  InitTimer();
-  PowerOn();
+  LoadAll();    //加载用户配置
+  InitTimer();  //定时器初始化
+  PowerOn();    //上电
   BatTask();
   
 /*main loop*/
@@ -15,13 +15,10 @@ void main(void){
     BatTask();
     KeyTsak();
     MainApp();
+    PowerTask();
     ClearFlag();
   }
-//  while(1){
-//    PwmTask();
-//    DispTask();
-//    PowerTask();
-//  }
+
 }
 
 

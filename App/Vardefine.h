@@ -87,6 +87,10 @@ typedef struct{
   u32   Time;           //ºÄÊ±
 }Frame_REG;
 
+
+extern u8 NowList;
+extern Frame_REG* pFrame;
+extern u8 NowPoint;
 extern Frame_REG UserFrame[10];
 extern const u8 FrameLength[];
 extern const Frame_REG FactFrame0[];

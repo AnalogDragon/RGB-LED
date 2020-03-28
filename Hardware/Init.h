@@ -22,5 +22,10 @@ void SysTickConfig(void);
 void InitAll(void);
 void InitTimer(void);
 
+void SWDInit_Master(void);
+void SWDInit_Slave(void);
+
+
+
 
 #endif

@@ -1,7 +1,5 @@
 #include "Led.h"
 
-#define FullVal 450
-
 
 Color_REG GetNextColor(void);
 
@@ -9,11 +7,17 @@ Color_REG GetNextColor(void);
 //刷新中断函数
 void DispLedFresh(void){
   Color_REG Color;
-  if(OutputState){
+  if(OutputState == 1){         //正常输出
     Color = GetNextColor();
     SetPwm(Color.R,Color.G,Color.B);
   }
-  else{
+  else if(OutputState == 2){    //显示当前操作的值
+    SetPwm(Color.R,Color.G,Color.B);
+  }
+  else if(OutputState == 3){    //校准结束绿色灯
+    SetPwm(0,450,0);
+  }
+  else{ //关闭显示
     OutputIndex = 0;
     OutputFrame = 0;
     SetPwm(0,0,0);
@@ -34,19 +38,18 @@ void StateLed(u8 R,u8 B){
 }
 
 
-void FlashLED(u8 Time){
+void FlashLED(u8 Time,u8 R,u8 B){
   u8 i;
   for(i=0;i<Time-1;i++){
-    StateLed(1,0);
+    StateLed(R,B);
     delay_ms(15);
     StateLed(0,0);
     delay_ms(150);
   }
-  StateLed(1,0);
+  StateLed(R,B);
   delay_ms(15);
   StateLed(0,0);
 }
-
 
 extern u8 OutputState;     //输出状态
 extern u8 OutputIndex;     //输出帧

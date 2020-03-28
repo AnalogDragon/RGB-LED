@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"D:\Program Files\IAR7.4\common\bin\cspybat" -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V100\User\settings\work.Debug.general.xcl" --backend -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V100\User\settings\work.Debug.driver.xcl" 
+"D:\Program Files\IAR7.4\common\bin\cspybat" -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V101\User\settings\work.Debug.general.xcl" --backend -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V101\User\settings\work.Debug.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"D:\Program Files\IAR7.4\common\bin\cspybat" -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V100\User\settings\work.Debug.general.xcl" "--debug_file=%~1" --backend -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V100\User\settings\work.Debug.driver.xcl" 
+"D:\Program Files\IAR7.4\common\bin\cspybat" -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V101\User\settings\work.Debug.general.xcl" "--debug_file=%~1" --backend -f "C:\Users\hp\Desktop\FansCtrl\LEDCtrl_V101\User\settings\work.Debug.driver.xcl" 
 
 @echo off 
 :end

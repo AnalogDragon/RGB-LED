@@ -14,7 +14,7 @@ LeaveTargetRunning=_ 0
 stlinkserialNo=79E3012A
 stlinkfoundProbes=
 [DebugChecksum]
-Checksum=-1583052
+Checksum=869965323
 [Exceptions]
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
@@ -23,10 +23,10 @@ ShowArgs=0
 [Disassembly]
 MixedMode=1
 [struct_types]
-Fmt0=Color_REG-B	1	0
-Fmt1=Color_REG-G	1	0
-Fmt2=Color_REG-R	1	0
-Fmt3=Color_REG-Z	1	0
+Fmt0=Color_REG-B	3	0
+Fmt1=Color_REG-G	3	0
+Fmt2=Color_REG-R	3	0
+Fmt3=Color_REG-Z	3	0
 Fmt4=Frame_REG-Mode	1	0
 Fmt5=Frame_REG-Time	1	0
 [array_types]
