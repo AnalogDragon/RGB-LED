@@ -7,7 +7,6 @@ void main(void){
   LoadAll();    //加载用户配置
   InitTimer();  //定时器初始化
   PowerOn();    //上电
-  BatTask();
   
 /*main loop*/
   while(1){
@@ -15,6 +14,7 @@ void main(void){
     BatTask();
     KeyTsak();
     MainApp();
+    LEDTask();
     PowerTask();
     ClearFlag();
   }

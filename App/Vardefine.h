@@ -8,13 +8,13 @@
 
 
 //#define ADC_BUF_Lg      20
-#define ADC_Lg          100
+#define ADC_Lg          200
 
 //#define MaxLength 500;
 
 //extern u16 DMABUF[ADC_BUF_Lg];
 extern u16 AdcTable[ADC_Lg];
-extern float AdcFilter;
+extern u16 AdcFilter;
 
 
 typedef struct{
@@ -85,6 +85,7 @@ typedef struct{
 extern AKeyState_REG Key[4];
 
 /*---------------------------------*/
+#define MaxUserLeng 64
 typedef struct{
   Color_REG Color;      //颜色
   u8    Mode;           //变化方法  0:无效点 1:闪变  2:渐变
@@ -95,7 +96,7 @@ typedef struct{
 extern u8 NowList;
 extern Frame_REG* pFrame;
 extern u8 NowPoint;
-extern Frame_REG UserFrame[10];
+extern Frame_REG UserFrame[MaxUserLeng];
 extern Frame_REG SiglFrame[2];
 extern const u8 FrameLength[];
 extern const Frame_REG FactFrame0[];

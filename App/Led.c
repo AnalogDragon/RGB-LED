@@ -35,36 +35,75 @@ void DispLedFresh(void){
 }
 
 
-void StateLed(u8 R,u8 B){
-  if(R)
+void StateLed(u8 temp){
+  if(temp&1)//R
     LED1IO = 1;
   else
     LED1IO = 0;
   
-  if(B)
+  if(temp&2)//B
     LED2IO = 1;
   else
     LED2IO = 0;
 }
 
+#define LEDFlash_TableLen 10
+u8 LEDFlash_Table[LEDFlash_TableLen] = {0};
 
-void FlashLED(u8 Time,u8 R,u8 B){
-  u8 i;
-  for(i=0;i<Time-1;i++){
-    StateLed(R,B);
-    delay_ms(15);
-    StateLed(0,0);
-    delay_ms(150);
+void FlashLED(u8 Color,u8 Time){
+  if(Time == 0)return;
+  for(u8 i=0;i<LEDFlash_TableLen;i++){
+    if(LEDFlash_Table[i] == 0){
+      LEDFlash_Table[i] = Color;
+      if(Time == 1)return;
+      Time--;
+    }
   }
-  StateLed(R,B);
-  delay_ms(15);
-  StateLed(0,0);
 }
 
-void PullLED(u16 Time,u8 R,u8 B){
-  StateLed(R,B);
+u8 InPutPoint(void){
+  if(LEDFlash_Table[0]){
+    StateLed(LEDFlash_Table[0]);
+    memcpy(&LEDFlash_Table[0],&LEDFlash_Table[1],LEDFlash_TableLen-1);
+    LEDFlash_Table[9] = 0;
+    return 1;
+  }
+  return 0;
+}
+
+void LEDTask(void){
+  static u8 Sta = 0;
+  static u16 TimeBuf = 0;
+  
+  if(Sta == 0){
+    if(InPutPoint()){
+      Sta = 1;//Enable
+      TimeBuf = Time.Cnt1ms;
+    }
+  }
+  else if(Sta == 1){
+    if(GetDtTime(TimeBuf,Time.Cnt1ms) > 15){
+      StateLed(0);
+      Sta = 2;//Disable
+      TimeBuf = Time.Cnt10ms;
+    }
+  }
+  else if(Sta == 2){
+    if(GetDtTime(TimeBuf,Time.Cnt10ms) > 15){
+      if(InPutPoint()){
+        Sta = 1;//Enable
+        TimeBuf = Time.Cnt1ms;
+      }
+      else
+        Sta = 0;
+    }
+  }
+}
+
+void PullLED(u8 temp,u16 Time){
+  StateLed(temp);
   delay_ms(Time);
-  StateLed(0,0);
+  StateLed(0);
 }
 
 extern u8 OutputIndex;     //输出帧
@@ -78,15 +117,13 @@ Color_REG GetNextColor(void){
   
   if(OutputFrame > NowAct[OutputIndex].Time){//时间到，帧+1
     OutputFrame = 0;
-    if(NowAct[OutputIndex+1].Mode == 0)//结尾，返回首帧
+    OutputIndex ++;
+    if((OutputIndex >= MaxIndex)||(NowAct[OutputIndex].Mode == 0))//结尾，返回首帧
       OutputIndex = 0;
-    else
-      OutputIndex ++;
-    if(OutputIndex >= MaxIndex)OutputIndex = 0;
   }
   
   Color1 = NowAct[OutputIndex].Color;
-  if(NowAct[OutputIndex+1].Mode)
+  if(NowAct[OutputIndex+1].Mode && (OutputIndex+1) < MaxIndex)
     Color2 = NowAct[OutputIndex+1].Color;
   else
     Color2 = NowAct[0].Color;

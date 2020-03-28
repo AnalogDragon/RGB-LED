@@ -23,9 +23,9 @@
 #define PWRIO   PFout(1)
    
 #define KEY0IO  PFin(0)
-#define KEY1IO  PAin(0)
+#define KEY1IO  PAin(5)
 #define KEY2IO  PAin(4)
-#define KEY3IO  PAin(5)
+#define KEY3IO  PAin(0)
 
 #endif
 

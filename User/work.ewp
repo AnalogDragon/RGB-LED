@@ -1963,7 +1963,7 @@
       <name>$PROJ_DIR$\..\App\Vardefine.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\App\Vardefine.h</name>
+      <name>$PROJ_DIR$\..\App\VarDefine.h</name>
     </file>
   </group>
   <group>

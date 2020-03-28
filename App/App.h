@@ -19,7 +19,7 @@ void PowerOn(void);
 void MainApp(void);
 u8 GetAList(u8 num);
 
-
+void GetID(uint32_t *id);
 
 
 

@@ -15,8 +15,8 @@ void SetPwm(u16 R,u16 G,u16 B){
     return;
   }
   TIM3->CCR4 = R;//*LvTab[BatPct-1]/100;
-  TIM3->CCR2 = G;//*LvTab[BatPct-1]/100;
-  TIM3->CCR1 = B;//*LvTab[BatPct-1]/100;
+  TIM3->CCR2 = B;//*LvTab[BatPct-1]/100;
+  TIM3->CCR1 = G;//*LvTab[BatPct-1]/100;
 }
 
 
@@ -25,8 +25,8 @@ u8 GetAdcValue(void){
   u8 i;
   u32 buf0;
   static u8 index = 0;
-  static u8 InitFlag = 0;
-  float buf2;
+//  static u8 InitFlag = 0;
+//  float buf1,buf2;
   
 //  buf0 = 0;
 //  for(i=0;i<ADC_BUF_Lg;i++){//DMA缓存均值滤波1
@@ -40,15 +40,15 @@ u8 GetAdcValue(void){
     for(i=0;i<ADC_Lg;i++){  //缓存均值滤波
       buf0 += AdcTable[i];
     }
-    buf2 = (float)buf0*3.3f/ADC_Lg/4096;
+    AdcFilter = buf0/ADC_Lg;
     
-    if(InitFlag){
-      AdcFilter = AdcFilter*0.99+buf2*0.01;  //一阶滤波
-    }
-    else{
-      InitFlag = 1;     //首次直接赋值
-      AdcFilter = buf2;
-    }
+//    if(InitFlag){
+//      AdcFilter = (AdcFilter>>2)*3+(buf0>>2);  //一阶滤波
+//    }
+//    else{
+//      InitFlag = 1;     //首次直接赋值
+//      AdcFilter = buf0;
+//    }
     return 1;
   }
   return 0;
@@ -80,7 +80,7 @@ void TimeBaseTask(void){
   if(KEY0){
     Shutdown++;
     if(Shutdown >= 12000){//12秒强制关机
-      StateLed(1,1);
+      StateLed(0x3);
       while(KEY0);
       PWRIO = 1;
       NVIC_SystemReset();
@@ -124,21 +124,21 @@ void ClearFlag(void){
 }
   
 //电压值转换为电量百分比0-100
-//AdcValue：输入ADC值  AdcRef：2.5V基准
-u8 GetPower(void){
-  if(AdcFilter < 1.5)
-    return 0;
-  else if(AdcFilter < 1.8)
-    return 1;
-  else if(AdcFilter < 1.85)
-    return 2;
-  else if(AdcFilter < 1.9)
-    return 3;
-  else if(AdcFilter < 1.95)
-    return 4;
-  else
-    return 5;
-}
+//AdcValue：输入ADC值
+//u8 GetPower(void){
+//  return (AdcFilter > 2100);
+//    return 0;
+//  else if(AdcFilter < 1.8)
+//    return 1;
+//  else if(AdcFilter < 1.85)
+//    return 2;
+//  else if(AdcFilter < 1.9)
+//    return 3;
+//  else if(AdcFilter < 1.95)
+//    return 4;
+//  else
+//    return 5;
+//}
 
 //获取时间差
 u16 GetDtTime(u16 TimeBuf,u16 TimeBase){
@@ -150,10 +150,11 @@ u16 GetDtTime(u16 TimeBuf,u16 TimeBase){
 
 //电量获取
 void BatTask(void){
-  if(Time.Flag1ms == 0)return; //ADC滤波，1ms进入一次
+  if(Time.Flag1ms == 0)return;
   
-  if(GetAdcValue())//ADC值转换，100ms进入一次
-    BatPct = GetPower();//3103
+  if(GetAdcValue())//ADC值转换
+    if(BatPct)
+      BatPct = (AdcFilter > 2100);
 }
 
 //开关机响应
@@ -162,7 +163,7 @@ void PowerTask(void){
     Shutdown = 1;//长按关机
   if(Shutdown){
     SetPwm(0,0,0);      //关闭输出
-    PullLED(400,1,0);
+    PullLED(1,400);
     PWRIO = 1;       //电源关
     NVIC_SystemReset();
     while(1);
@@ -175,7 +176,7 @@ u8 GetAList(u8 num){
   if(num == 0){
     if(UserFrame[0].Mode == 1 || UserFrame[0].Mode == 2){
       NowAct = UserFrame;
-      MaxIndex = 10;
+      MaxIndex = MaxUserLeng;
       return 0;
     }
   }
@@ -203,6 +204,8 @@ void ValueInit(void){
   OutputState = 0;      //输出
   Shutdown = 0;         //清除关机标记
   PowerMode = 0;
+  BatPct = 1;
+  
   NowList = 0;
   while(GetAList(NowList))NowList++;
   NowPoint = 0;
@@ -211,8 +214,10 @@ void ValueInit(void){
 
 void ValueInitSigl(void){
   NowAct = &SiglFrame[0];
-  OutputIndex = OutputFrame = 0;
-  OutputState = 3;    //不变化
+  OutputIndex = 0;
+  OutputFrame = 0;
+  OutputState = 3;
+  MaxIndex = 2;
 }
 
 //ms软件延时
@@ -224,8 +229,8 @@ void delay_ms(u16 n){
   }
 }
 
-  u8 i,buf1,buf2,buf;
 void PowerOn(void){
+  u8 buf1,buf2;
   PWRIO = 1;
   ValueInit();           //值初始化
   
@@ -245,9 +250,11 @@ void PowerOn(void){
     if(buf2 != buf1){
       PWRIO = 0;
       buf2 = buf1;
-      FlashLED(buf1+1,1,0);
+      FlashLED(1,buf1+1);
     }
     
+    BatTask();
+    LEDTask();
     ClearFlag();
   }
   
@@ -305,8 +312,6 @@ void LinkMode(void){
 
 #elif (HardVer == 101)
 
-//void LinkMode(void){
-//}
 #endif
 
 void ClearKeySta(void){
@@ -321,12 +326,12 @@ void CheckPress2(u8 flag,u8* pData1,u8* pData2,u8 Max1,u8 Max2){
   
   if(flag){
     Press++;
-    PressTime = Time.Cnt100ms;
+    PressTime = Time.Cnt10ms;
     return;
   }
   
   if(Press){
-    if(GetDtTime(PressTime,Time.Cnt100ms) > 3){
+    if(GetDtTime(PressTime,Time.Cnt10ms) > 25){
       if(Press == 1){  //单击
         (*pData1)++;
         if((*pData1) > Max1)(*pData1) = 0;
@@ -341,14 +346,41 @@ void CheckPress2(u8 flag,u8* pData1,u8* pData2,u8 Max1,u8 Max2){
   
 }
 
+
+void DispStaLED(u8 Sta){
+  static u16 TimeBuf = 0;
+  static u8 StaBuf = 0;
+  
+  if(Sta != StaBuf){
+    StaBuf = Sta;
+    FlashLED(2,1);
+    FlashLED(1,Sta+1);
+    TimeBuf = Time.Cnt100ms;
+    return;
+  }
+  
+  if(GetDtTime(TimeBuf,Time.Cnt100ms) < 30)return;
+  
+  if(BatPct == 0){
+    FlashLED(1,3);
+  }
+  else{
+    if(PowerMode == 1){//单色
+      FlashLED(2,1);
+      FlashLED(1,Sta+1);
+    }
+    else{
+      FlashLED(2,2);
+    }
+  }
+  TimeBuf = Time.Cnt100ms;
+
+}
+
+
 void NormMode(void){
   
-  if(Time.Flag1s && ((Time.Cnt1s%3)==0)){
-    if(BatPct)
-      FlashLED(2,0,1);
-    else
-      FlashLED(3,1,0);
-  }//Flash 2Times
+  DispStaLED(0);
   
   //主键
   if(Key[2].Flag.bit.KeyOut == 2){//校准时间
@@ -373,70 +405,113 @@ void NormMode(void){
   
 }
 
-
+u16 SetSB(u16 Num){
+//  Sat = ((31-ColorPoint.bit.Sat)%32);
+  Num += ((31-ColorPoint.bit.Sat)%32)*450/31;
+  if(Num>450)Num=450;
+  return Num*(ColorPoint.bit.Brt%32)/31;
+}
 
 void GetHSB(void){
-  u16 temp;
+  u16 temp,tempp,tempn;
   u16 Rtemp;
   u16 Gtemp;
   u16 Btemp;
   
   temp = ColorPoint.bit.Hue;
+  
+  tempp = temp%12;//0~11
+  tempn = (12-tempp)*37;//12~1
+  tempp *= 37;
+  
+  Btemp = 450;
+  Gtemp = 450;
+  Rtemp = 450;
   if (temp < 12) {//1,+.0
-    Btemp = 450;
-    Gtemp = temp*37;
+//    Btemp = 450;
+    Gtemp = tempp;
     Rtemp = 0;
   }
   else if (temp < 24) {//-,1,0
-    Btemp = (24-temp)*37;
-    Gtemp = 450;
+    Btemp = tempn;
+//    Gtemp = 450;
     Rtemp = 0;
   }
   else if (temp < 36) {//0,1,+
     Btemp = 0;
-    Gtemp = 450;
-    Rtemp = (temp-24)*37;
+//    Gtemp = 450;
+    Rtemp = tempp;
   }
   else if (temp < 48) {//0,-,1
     Btemp = 0;
-    Gtemp = (48-temp)*37;
-    Rtemp = 450;
+    Gtemp = tempn;
+//    Rtemp = 450;
   }
   else if (temp < 60) {//+,0,1
-    Btemp = (temp-48)*37;
+    Btemp = tempp;
     Gtemp = 0;
-    Rtemp = 450;
+//    Rtemp = 450;
   }
   else {//1,0,-
-    Btemp = 450;
+//    Btemp = 450;
     Gtemp = 0;
-    Rtemp = (72-temp)*37;
+    Rtemp = tempn;
   }
   
-  temp = (31-ColorPoint.bit.Sat)%32;
+//  temp = (31-ColorPoint.bit.Sat)%32;
+//  
+//  Rtemp += temp*450/31;
+//  Gtemp += temp*450/31;
+//  Btemp += temp*450/31;
+//  
+//  if(Rtemp>450)Rtemp=450;
+//  if(Gtemp>450)Gtemp=450;
+//  if(Btemp>450)Btemp=450;
+//  
+//  temp = ColorPoint.bit.Brt%32;
+//  
+//  Rtemp = Rtemp*temp/31;
+//  Gtemp = Gtemp*temp/31;
+//  Btemp = Btemp*temp/31;
   
-  Rtemp += temp*450/32;
-  Gtemp += temp*450/32;
-  Btemp += temp*450/32;
+  SiglFrame[0].Color.R = SetSB(Rtemp);
+  SiglFrame[0].Color.G = SetSB(Gtemp);
+  SiglFrame[0].Color.B = SetSB(Btemp);
   
-  if(Rtemp>450)Rtemp=450;
-  if(Gtemp>450)Gtemp=450;
-  if(Btemp>450)Btemp=450;
+  switch(ColorPoint.bit.PlayMode){
+    
+  case 2:
+    SiglFrame[1].Color.R = 0;
+    SiglFrame[1].Color.G = 0;
+    SiglFrame[1].Color.B = 0;
+    SiglFrame[0].Mode = 1;
+    SiglFrame[0].Time = 1000;
+    SiglFrame[1].Mode = 1;
+    SiglFrame[1].Time = 1000;
+    break;
+    
+  case 1:
+    SiglFrame[1].Color.R = SiglFrame[0].Color.R/20+1;
+    SiglFrame[1].Color.G = SiglFrame[0].Color.G/20+1;
+    SiglFrame[1].Color.B = SiglFrame[0].Color.B/20+1;
+    SiglFrame[0].Mode = 2;
+    SiglFrame[0].Time = 4000;
+    SiglFrame[1].Mode = 2;
+    SiglFrame[1].Time = 4000;
+    break;
+    
+  default:
+    SiglFrame[1].Color.R = SiglFrame[0].Color.R;
+    SiglFrame[1].Color.G = SiglFrame[0].Color.G;
+    SiglFrame[1].Color.B = SiglFrame[0].Color.B;
+    SiglFrame[0].Mode = 1;
+    SiglFrame[0].Time = 1000;
+    SiglFrame[1].Mode = 1;
+    SiglFrame[1].Time = 1000;
+  }
   
-  temp = ColorPoint.bit.Brt%32;
-  
-  Rtemp = Rtemp*temp/31;
-  Gtemp = Gtemp*temp/31;
-  Btemp = Btemp*temp/31;
-  
-  SiglFrame[0].Color.R = Rtemp;
-  SiglFrame[0].Color.G = Gtemp;
-  SiglFrame[0].Color.B = Btemp;
-  
-  SiglFrame[1].Color.R = Rtemp/20;
-  SiglFrame[1].Color.G = Gtemp/20;
-  SiglFrame[1].Color.B = Btemp/20;
 }
+
 
 void SigMode(void){
   static u8 Sta = 0;//当前设置项 0~2
@@ -444,18 +519,9 @@ void SigMode(void){
   static u8 Key2Flg = 0;
   static u8 Key3Flg = 0;
   
-  u8 Max,Step,Data,Cycl;
+  u8 Max,Data,Cycl;//Step,
   
-  if(Time.Flag1s && ((Time.Cnt1s%3)==0)){
-    if(BatPct){
-      FlashLED(1,0,1);
-      delay_ms(150);
-      FlashLED(Sta+1,1,0);
-    }
-    else
-      FlashLED(3,1,0);
-  }//Flash 2Times
-  
+  DispStaLED(Sta);
   
   //主键
   if(Key[2].Flag.bit.KeyOut == 2){
@@ -474,31 +540,34 @@ void SigMode(void){
   CheckPress2(0,&Sta,&Speed,2,4);
   
   //导航键操作赋值
+  Max = 31;
+  Cycl = 0;
+//  Step = 1;
   switch(Sta){
   case 0:
     Data = ColorPoint.bit.Hue;
     Max = 71;
-    Step = 1;
     Cycl = 1;
+//    Step = 1;
     break;
   case 1:
     Data = ColorPoint.bit.Sat;
-    Max = 31;
-    Step = 1;
-    Cycl = 0;
+//    Max = 31;
+//    Cycl = 0;
+//    Step = 1;
     break;
   case 2:
     Data = ColorPoint.bit.Brt;
-    Max = 31;
-    Step = 1;
-    Cycl = 0;
+//    Max = 31;
+//    Cycl = 0;
+//    Step = 1;
     break;
   }
   
   //导航键
   if(Key[1].Flag.bit.KeyOut == 1){
     if(Key1Flg == 0){
-      if(Data < Max)Data += Step;
+      if(Data < Max)Data++;
       else if(Cycl)Data = 0;
       SaveTask(1);
     }
@@ -506,7 +575,7 @@ void SigMode(void){
   }
   else if(Key[1].Flag.bit.KeyOut == 2){
     if(Time.Flag100ms){
-      if(Data < Max)Data += Step;
+      if(Data < Max)Data++;
       else if(Cycl)Data = 0;
     }
   }
@@ -514,7 +583,7 @@ void SigMode(void){
   
   if(Key[3].Flag.bit.KeyOut == 1){
     if(Key3Flg == 0){
-      if(Data)Data -= Step;
+      if(Data)Data--;
       else if(Cycl)Data = Max;
       SaveTask(1);
     }
@@ -522,7 +591,7 @@ void SigMode(void){
   }
   else if(Key[3].Flag.bit.KeyOut == 2){
     if(Time.Flag100ms){
-      if(Data)Data -= Step;
+      if(Data)Data--;
       else if(Cycl)Data = Max;
     }
   }

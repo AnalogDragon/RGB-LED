@@ -6,13 +6,13 @@
 #define FullVal 450
 
 void DispLedFresh(void);
-void StateLed(u8 R,u8 B);
-void FlashLED(u8 Time,u8 R,u8 B);
-void PullLED(u16 Time,u8 R,u8 B);
+void StateLed(u8 temp);
+void FlashLED(u8 Color,u8 Time);
+void PullLED(u8 temp,u16 Time);
 
 
 
-
+void LEDTask(void);
 
 
 

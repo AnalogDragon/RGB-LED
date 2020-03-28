@@ -4,15 +4,15 @@
 #define FLASH_START_ADDR        ((uint32_t)0x08003C00)   /* Start @ of user Flash area */
 #define FLASH_PAGE_SIZE         ((uint32_t)0x00000400)   /* FLASH Page Size */
 
-#define Addr1 0
-#define Addr2 100
-#define Addr3 120
+#define Addr1 0x000
+#define Addr2 0x200
+#define Addr3 0x220
 
 
-u8 table[200];
+u8 table[FLASH_PAGE_SIZE];//One Page
 
 void SaveAll(void){
-  u8 i;
+  u16 i;
   u8 *p = (u8*)UserFrame;
   for(i=0;i<sizeof(UserFrame);i++)
     table[Addr1+i] = p[i];
@@ -21,13 +21,13 @@ void SaveAll(void){
     table[Addr2+i] = p[i];
   table[Addr3] = (TimeBase>>8)&0xFF;
   table[Addr3+1] = TimeBase&0xFF;
-  FlashWrite((Uint16*)table,0,sizeof(table)/2);
+  FlashWrite((Uint16*)table,sizeof(table)/2);
 }
 
 void LoadAll(void){
-  u8 i;
+  u16 i;
   u8 *p = (u8*)UserFrame;
-  FlashRead((Uint16*)table,0,sizeof(table)/2);
+  FlashRead((Uint16*)table,sizeof(table)/2);
   TimeBase = table[Addr3+1]|(table[Addr3]<<8);
   if((TimeBase>8400) || (TimeBase<7600)){
     TimeBase = 8000;
@@ -74,15 +74,13 @@ Addr:   地址
 Length: 长度
 
 */
-void FlashWrite(Uint16* Data,Uint8 Addr,u16 Length){
+void FlashWrite(Uint16* Data,u16 Length){
   u16 i;
-  u32 Address;
-  Address = (u32)Addr;
   FLASH_Unlock();
   FLASH_ClearFlag(FLASH_FLAG_BSY|FLASH_FLAG_EOP|FLASH_FLAG_PGERR|FLASH_FLAG_WRPERR);
-  FLASH_ErasePage(FLASH_START_ADDR+(Address*FLASH_PAGE_SIZE));
+  FLASH_ErasePage(FLASH_START_ADDR);
   for(i=0;i<Length;i++){
-      FLASH_ProgramHalfWord(FLASH_START_ADDR+(Address*FLASH_PAGE_SIZE)+i*2,*Data);
+      FLASH_ProgramHalfWord(FLASH_START_ADDR + i*2,*Data);
       FLASH_WaitForLastOperation(1000);
       Data++;
   }
@@ -97,13 +95,11 @@ Addr:   地址
 Length: 长度
 
 */
-void FlashRead(Uint16* Data,Uint8 Addr,u16 Length){
-    Uint32 Address;
+void FlashRead(Uint16* Data,u16 Length){
     Uint32 Buf;
     u16 i;
-    Address = (Uint32)Addr;
     for(i=0;i<Length/2;i++){
-        Buf = (*((Uint32 *)(FLASH_START_ADDR + (Address*FLASH_PAGE_SIZE) + i*4)));
+        Buf = (*((Uint32 *)(FLASH_START_ADDR + i*4)));
         *Data = Buf&0xFFFF;
         Data++;
         *Data = (Buf>>16)&0xFFFF;
