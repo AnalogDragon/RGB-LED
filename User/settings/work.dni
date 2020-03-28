@@ -1,0 +1,70 @@
+[Stack]
+FillEnabled=0
+OverflowWarningsEnabled=1
+WarningThreshold=90
+SpWarningsEnabled=1
+WarnLogOnly=1
+UseTrigger=1
+TriggerName=main
+LimitSize=0
+ByteLimit=50
+[StLinkDriver]
+CStepIntDis=_ 0
+LeaveTargetRunning=_ 0
+stlinkserialNo=79E3012A
+stlinkfoundProbes=
+[DebugChecksum]
+Checksum=-1583052
+[Exceptions]
+StopOnUncaught=_ 0
+StopOnThrow=_ 0
+[CallStack]
+ShowArgs=0
+[Disassembly]
+MixedMode=1
+[struct_types]
+Fmt0=Color_REG-B	1	0
+Fmt1=Color_REG-G	1	0
+Fmt2=Color_REG-R	1	0
+Fmt3=Color_REG-Z	1	0
+Fmt4=Frame_REG-Mode	1	0
+Fmt5=Frame_REG-Time	1	0
+[array_types]
+Fmt0=u8[100]	3	0
+Fmt1=u8[200]	4	0
+[watch_formats]
+Fmt0={W}1:buf0	4	0
+Fmt1={W}42:BatPct	3	0
+Fmt2={W}42:ComAddr	3	0
+Fmt3={W}42:ComMode	4	0
+Fmt4={W}42:DispNum	4	0
+Fmt5={W}42:LED1	3	0
+Fmt6={W}42:LED1o	3	0
+Fmt7={W}42:LED2	3	0
+Fmt8={W}42:LED3	3	0
+Fmt9={W}42:LED4	3	0
+Fmt10={W}42:LED4o	3	0
+Fmt11={W}42:LED5	3	0
+Fmt12={W}42:OutputDuty	3	0
+Fmt13={W}42:OutputState	3	0
+Fmt14={W}42:PowerMode	3	0
+Fmt15={W}42:aaa	3	0
+Fmt16={W}42:bbb	3	0
+[Log file]
+LoggingEnabled=_ 0
+LogFile=_ ""
+Category=_ 0
+[TermIOLog]
+LoggingEnabled=_ 0
+LogFile=_ ""
+[CallStackLog]
+Enabled=0
+[CallStackStripe]
+ShowTiming=1
+[Disassemble mode]
+mode=0
+[Breakpoints2]
+Count=0
+[Aliases]
+Count=0
+SuppressDialog=0
