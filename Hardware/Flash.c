@@ -42,7 +42,31 @@ void LoadAll(void){
     p[i] = table[Addr2+i];
 }
 
-
+//´æ´¢¼ì²â
+void SaveTask(u8 Flag){
+  static u16 ChangeTime;
+  static u8 ChangeFlag = 0xFF;
+  static union ColorPoint_UNI ColorPointBak;//»º´æ
+  
+  if(ChangeFlag > 1){
+    ChangeFlag = 0;
+    ColorPointBak.all = ColorPoint.all;
+  }
+  
+  if(Flag){
+    ChangeFlag = 1;
+    ChangeTime = Time.Cnt1s;
+    return;
+  }
+  
+  if((GetDtTime(ChangeTime,Time.Cnt1s) > 30)&&(ChangeFlag == 1)){//30s to save
+    ChangeFlag = 0;
+    if(ColorPoint.all != ColorPointBak.all){    //ÅÐ¶Ï²îÒìÐÔ
+      ColorPointBak.all = ColorPoint.all;
+      SaveAll();
+    }
+  }
+}
 /*
 
 *Data:  Êý×é

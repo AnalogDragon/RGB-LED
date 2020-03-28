@@ -14,7 +14,7 @@ LeaveTargetRunning=_ 0
 stlinkserialNo=79E3012A
 stlinkfoundProbes=
 [DebugChecksum]
-Checksum=-733170015
+Checksum=-96533675
 [Exceptions]
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
@@ -39,19 +39,22 @@ Fmt1={W}42:BatPct	3	0
 Fmt2={W}42:ComAddr	3	0
 Fmt3={W}42:ComMode	4	0
 Fmt4={W}42:DispNum	4	0
-Fmt5={W}42:LED1	3	0
-Fmt6={W}42:LED1o	3	0
-Fmt7={W}42:LED2	3	0
-Fmt8={W}42:LED3	3	0
-Fmt9={W}42:LED4	3	0
-Fmt10={W}42:LED4o	3	0
-Fmt11={W}42:LED5	3	0
-Fmt12={W}42:NowList	3	0
-Fmt13={W}42:OutputDuty	3	0
-Fmt14={W}42:OutputState	3	0
-Fmt15={W}42:PowerMode	3	0
-Fmt16={W}42:aaa	3	0
-Fmt17={W}42:bbb	3	0
+Fmt5={W}42:Gain	3	0
+Fmt6={W}42:LED1	3	0
+Fmt7={W}42:LED1o	3	0
+Fmt8={W}42:LED2	3	0
+Fmt9={W}42:LED3	3	0
+Fmt10={W}42:LED4	3	0
+Fmt11={W}42:LED4o	3	0
+Fmt12={W}42:LED5	3	0
+Fmt13={W}42:NowList	3	0
+Fmt14={W}42:OutputDuty	3	0
+Fmt15={W}42:OutputState	3	0
+Fmt16={W}42:PowerMode	3	0
+Fmt17={W}42:Speed	3	0
+Fmt18={W}42:Sta	4	0
+Fmt19={W}42:aaa	3	0
+Fmt20={W}42:bbb	3	0
 [Log file]
 LoggingEnabled=_ 0
 LogFile=_ ""
@@ -66,7 +69,8 @@ ShowTiming=1
 [Disassemble mode]
 mode=0
 [Breakpoints2]
-Count=0
+Bp0=_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\Hardware\Flash.c}.65.7" 0 0 1 "" 0 "" 0
+Count=1
 [Aliases]
 Count=0
 SuppressDialog=0

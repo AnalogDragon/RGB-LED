@@ -16,9 +16,10 @@ u8 OutputIndex = 0;     //输出帧
 u8 MaxIndex = 0;        //帧数
 u16 OutputFrame = 0;    //当前帧时间
 u8 Speed = 0;
+u8 Gain = 0;
 
 u8 PowerMode;
-u8 DispPage;            //显示页
+//u8 DispPage;            //显示页
 u8 BatPct = 0;          //电量
 
 u8 Shutdown;            //关机标记
@@ -35,57 +36,48 @@ u8 NowPoint;
 Frame_REG UserFrame[10];  //用户设置的
 Frame_REG SiglFrame[2];
 
-const u8 FrameLength[10] = {3,3,3,3,3,3,7,4,4,50};
+const u8 FrameLength[10] = {2,2,2,2,2,2,6,3,3,36};
 
-const Frame_REG FactFrame0[3]={
+const Frame_REG FactFrame0[2]={
   {{0,0,FullVal},2,4000},{{0,0,FullVal/20},2,4000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame1[3]={
+const Frame_REG FactFrame1[2]={
   {{0,FullVal,0},2,4000},{{0,FullVal/20,0},2,4000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame2[3]={
+const Frame_REG FactFrame2[2]={
   {{FullVal,0,0},2,4000},{{FullVal/20,0,0},2,4000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame3[3]={
+const Frame_REG FactFrame3[2]={
   {{0,FullVal,FullVal},2,4000},{{0,FullVal/20,FullVal/20},2,4000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame4[3]={
+const Frame_REG FactFrame4[2]={
   {{FullVal,FullVal,0},2,4000},{{FullVal/20,FullVal/20,0},2,4000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame5[3]={
+const Frame_REG FactFrame5[2]={
   {{FullVal,0,FullVal},2,4000},{{FullVal/20,0,FullVal/20},2,4000},
-  {{0,0,0},0,0},//End
 };
 
-const Frame_REG FactFrame6[7]={
+const Frame_REG FactFrame6[6]={
   {{FullVal,0,0},2,4000},{{FullVal/2,0,0},2,4000},
   {{0,FullVal,0},2,4000},{{0,FullVal/2,0},2,4000},
   {{0,0,FullVal},2,4000},{{0,0,FullVal/2},2,4000},
-  {{0,0,0},0,0},//End
 };
 
-const Frame_REG FactFrame7[4]={
+const Frame_REG FactFrame7[3]={
   {{FullVal,0,0},2,8000},
   {{0,FullVal,0},2,8000},
   {{0,0,FullVal},2,8000},
-  {{0,0,0},0,0},//End
 };
-const Frame_REG FactFrame8[4]={
+const Frame_REG FactFrame8[3]={
   {{0,0,FullVal},2,8000},
   {{0,FullVal,0},2,8000},
   {{FullVal,0,0},2,8000},
-  {{0,0,0},0,0},//End
 };
 
-const Frame_REG FactFrame9[50]={
+const Frame_REG FactFrame9[36]={
   {{0,0,0},2,1000},{{FullVal,0,0},2,1000},
   {{0,0,0},2,1000},{{0,FullVal,0},2,1000},
-  {{0,0,0},2,1000},{{0,0,FullVal},2,1000},{{0,0,0},1,1},
+  {{0,0,0},2,1000},{{0,0,FullVal},2,1000},
   
   {{FullVal,0,0},2,1000},{{FullVal,FullVal,0},2,1000},{{0,FullVal,FullVal},2,1000},
   {{FullVal,0,FullVal},2,1000},{{FullVal,FullVal,0},2,1000},{{0,FullVal,FullVal},2,1000},
@@ -95,9 +87,6 @@ const Frame_REG FactFrame9[50]={
   {{FullVal,0,0},1,200},{{0,0,0},1,200},
   {{0,FullVal,0},1,200},{{0,0,0},1,200},
   {{0,0,FullVal},1,200},{{0,0,0},1,200},
-  {{FullVal,0,0},1,200},{{0,0,0},1,200},
-  {{0,FullVal,0},1,200},{{0,0,0},1,200},
-  {{0,0,FullVal},1,200},{{0,0,0},1,200},
   
   {{FullVal,FullVal,0},1,200},{{0,0,0},1,200},
   {{0,FullVal,FullVal},1,200},{{0,0,0},1,200},
@@ -105,11 +94,7 @@ const Frame_REG FactFrame9[50]={
   {{FullVal,FullVal,0},1,200},{{0,0,0},1,200},
   {{0,FullVal,FullVal},1,200},{{0,0,0},1,200},
   {{FullVal,0,FullVal},1,200},{{0,0,0},1,200},
-  {{FullVal,FullVal,0},1,200},{{0,0,0},1,200},
-  {{0,FullVal,FullVal},1,200},{{0,0,0},1,200},
-  {{FullVal,0,FullVal},1,200},{{0,0,0},1,200},
   {{FullVal,FullVal,FullVal},1,200},{{0,0,0},1,200},
-  {{0,0,0},0,0},//End
 };
 
 Frame_REG *NowAct;

@@ -15,13 +15,17 @@ void DispLedFresh(void){
     ;
   }
   else if(OutputState == 3){ //单色模式   //校准结束绿色灯
-    if(ColorPoint.bit.PlayMode == 1){
-    }
-    else if(ColorPoint.bit.PlayMode == 2){
-    }
-    else{
-      SetPwm(SiglFrame[0].Color.R,SiglFrame[0].Color.G,SiglFrame[0].Color.B);
-    }
+//    if(SaveData.ColorPoint.bit.PlayMode == 1){
+//    }
+//    else if(SaveData.ColorPoint.bit.PlayMode == 2){
+//      MaxIndex = 10;
+//      OutputIndex = OutputFrame = 0;
+//    }
+//    else{
+//      SetPwm(SiglFrame[0].Color.R,SiglFrame[0].Color.G,SiglFrame[0].Color.B);
+//    }
+    Color = GetNextColor();
+    SetPwm(Color.R,Color.G,Color.B);
   }
   else{ //关闭显示
     OutputIndex = 0;
@@ -63,7 +67,6 @@ void PullLED(u16 Time,u8 R,u8 B){
   StateLed(0,0);
 }
 
-extern u8 OutputState;     //输出状态
 extern u8 OutputIndex;     //输出帧
 extern u8 MaxIndex;        //帧数
 extern u16 OutputFrame;    //当前帧时间
@@ -100,10 +103,11 @@ Color_REG GetNextColor(void){
     Color =  Color1;
   
   OutputFrame += (1+Speed);
+  Color.R = Color.R/(Gain+1);
+  Color.G = Color.G/(Gain+1);
+  Color.B = Color.B/(Gain+1);
   return Color;
 }
-
-
 
 
 

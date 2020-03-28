@@ -10,6 +10,7 @@
 #include "Flash.h"
 #include "main.h"
 #include "Sci.h"
+#include "string.h"
 
 
 typedef struct {

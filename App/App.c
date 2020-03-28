@@ -201,14 +201,18 @@ u8 GetAList(u8 num){
 //全局变量初始化
 void ValueInit(void){
   OutputState = 0;      //输出
-  DispPage = 0;         //显示电量
   Shutdown = 0;         //清除关机标记
   PowerMode = 0;
-  Speed = 0;
-  NowList = sizeof(UserFrame);
+  NowList = 0;
   while(GetAList(NowList))NowList++;
   NowPoint = 0;
   pFrame = &UserFrame[0];
+}
+
+void ValueInitSigl(void){
+  NowAct = &SiglFrame[0];
+  OutputIndex = OutputFrame = 0;
+  OutputState = 3;    //不变化
 }
 
 //ms软件延时
@@ -220,65 +224,52 @@ void delay_ms(u16 n){
   }
 }
 
+  u8 i,buf1,buf2,buf;
 void PowerOn(void){
-  u8 i,buf;
   PWRIO = 1;
   ValueInit();           //值初始化
   
-  i = 0;
-  while(1){     //按住1s
-    if(KEY0)i++;
-    if(i>=50)break;
-    delay_ms(20);
-  }
-  PWRIO = 0;            //电源开
-L1:
-  FlashLED(2,1,0);
-  
-  buf = i = 0;
-  while(KEY0){     //继续按住
-    i++;
-    if(i>=100){
-      buf = 1;
-      break;
+  buf1 = 0;
+  buf2 = 0;
+  while(1){
+    GetFlag();
+    KeyTsak();
+    
+    if(Key[0].Flag.bit.KeyOut && (Key[0].Flag.bit.KeyOut < 3)){
+      if(Key[0].HoldTime>120)
+        buf1 = ((Key[0].HoldTime-120)/120)%3+1;
     }
-    IWDG_ReloadCounter();
-    delay_ms(20);
-  }
-  if(buf == 0)return;//正常开机
-  FlashLED(3,1,0);
-  
-  buf = i = 0;
-  while(KEY0){     //继续按住
-    i++;
-    if(i>=100){
-      buf = 1;
+    else if(Time.Cnt1s)
       break;
+    
+    if(buf2 != buf1){
+      PWRIO = 0;
+      buf2 = buf1;
+      FlashLED(buf1+1,1,0);
     }
-    IWDG_ReloadCounter();
-    delay_ms(20);
+    
+    ClearFlag();
   }
-  if(buf == 0){//模式2 SetColor
-    PowerMode = 1;
-    return;
-  }
-  FlashLED(4,1,0);//
   
-  buf = i = 0;
-  while(KEY0){     //继续按住
-    i++;
-    if(i>=100){
-      buf = 1;
-      break;
-    }
-    IWDG_ReloadCounter();
-    delay_ms(20);
+  PowerMode = buf1-1;
+  
+  switch(buf1){
+  case 1:
+    OutputState = 1;      //正常输出
+    break;
+    
+  case 2:
+    ValueInitSigl();
+    break;
+    
+  case 3:
+    break;
+    
+  default:
+    NVIC_SystemReset();
+    while(1);
   }
-  if(buf == 0){//模式3 Link
-    PowerMode = 2;
-    return;
-  }
-  goto L1;
+  Key[0].Flag.all = 0;
 }
 
 ////改变某个值
@@ -324,7 +315,34 @@ void ClearKeySta(void){
   if(Key[3].Flag.bit.KeyOut > 2)Key[3].Flag.bit.KeyOut = 0;
 }
 
+void CheckPress2(u8 flag,u8* pData1,u8* pData2,u8 Max1,u8 Max2){
+  static u8 Press = 0;
+  static u16 PressTime = 0;    //双击判断
+  
+  if(flag){
+    Press++;
+    PressTime = Time.Cnt100ms;
+    return;
+  }
+  
+  if(Press){
+    if(GetDtTime(PressTime,Time.Cnt100ms) > 3){
+      if(Press == 1){  //单击
+        (*pData1)++;
+        if((*pData1) > Max1)(*pData1) = 0;
+      }
+      else if(Press == 2){     //双击
+        (*pData2)++;
+        if((*pData2) > Max2)(*pData2) = 0;
+      }
+      Press = 0;
+    }
+  }
+  
+}
+
 void NormMode(void){
+  
   if(Time.Flag1s && ((Time.Cnt1s%3)==0)){
     if(BatPct)
       FlashLED(2,0,1);
@@ -332,17 +350,20 @@ void NormMode(void){
       FlashLED(3,1,0);
   }//Flash 2Times
   
-  if(Key[1].Flag.bit.KeyOut == 3){//UP short press
-    do{NowList++;
-    }while(GetAList(NowList));
-  }
-  
+  //主键
   if(Key[2].Flag.bit.KeyOut == 2){//校准时间
     OutputIndex = OutputFrame = 0;
   }
   else if(Key[2].Flag.bit.KeyOut == 3){
-    Speed++;
-    if(Speed>4)Speed = 0;
+    CheckPress2(1,&Gain,&Speed,4,4);
+  }
+  CheckPress2(0,&Gain,&Speed,4,4);
+  
+  
+  //导航键
+  if(Key[1].Flag.bit.KeyOut == 3){//UP short press
+    do{NowList++;
+    }while(GetAList(NowList));
   }
   
   if(Key[3].Flag.bit.KeyOut == 3){//Down short press
@@ -350,7 +371,6 @@ void NormMode(void){
     }while(GetAList(NowList));
   }
   
-  ClearKeySta();
 }
 
 
@@ -412,6 +432,10 @@ void GetHSB(void){
   SiglFrame[0].Color.R = Rtemp;
   SiglFrame[0].Color.G = Gtemp;
   SiglFrame[0].Color.B = Btemp;
+  
+  SiglFrame[1].Color.R = Rtemp/20;
+  SiglFrame[1].Color.G = Gtemp/20;
+  SiglFrame[1].Color.B = Btemp/20;
 }
 
 void SigMode(void){
@@ -419,42 +443,37 @@ void SigMode(void){
   static u8 Key1Flg = 0;
   static u8 Key2Flg = 0;
   static u8 Key3Flg = 0;
-  static u8 ChangeFlag = 0xFF;
-  static union ColorPoint_UNI ColorPointBak;
-  static u16 ChangeTime;
   
   u8 Max,Step,Data,Cycl;
-  
-  if(ChangeFlag > 1){
-    ChangeFlag = 0;
-    ColorPointBak.all = ColorPoint.all;
-  }
   
   if(Time.Flag1s && ((Time.Cnt1s%3)==0)){
     if(BatPct){
       FlashLED(1,0,1);
       delay_ms(150);
-      FlashLED(1,1,0);
+      FlashLED(Sta+1,1,0);
     }
     else
       FlashLED(3,1,0);
   }//Flash 2Times
   
+  
+  //主键
   if(Key[2].Flag.bit.KeyOut == 2){
     if(Key2Flg==0)ColorPoint.bit.PlayMode++;
     if(ColorPoint.bit.PlayMode>2)ColorPoint.bit.PlayMode = 0;
     Key2Flg = 1;
-    ChangeFlag = 1;
-    ChangeTime = Time.Cnt1s;
+    SaveTask(1);
   }
   else{
     Key2Flg = 0;
     if(Key[2].Flag.bit.KeyOut == 3){
-      Sta++;
-      if(Sta>2)Sta = 0;
+      CheckPress2(1,&Sta,&Speed,2,4);
+      SaveTask(1);
     }
   }
+  CheckPress2(0,&Sta,&Speed,2,4);
   
+  //导航键操作赋值
   switch(Sta){
   case 0:
     Data = ColorPoint.bit.Hue;
@@ -475,13 +494,13 @@ void SigMode(void){
     Cycl = 0;
     break;
   }
-
+  
+  //导航键
   if(Key[1].Flag.bit.KeyOut == 1){
     if(Key1Flg == 0){
       if(Data < Max)Data += Step;
       else if(Cycl)Data = 0;
-      ChangeFlag = 1;
-      ChangeTime = Time.Cnt1s;
+      SaveTask(1);
     }
     Key1Flg = 1;
   }
@@ -497,8 +516,7 @@ void SigMode(void){
     if(Key3Flg == 0){
       if(Data)Data -= Step;
       else if(Cycl)Data = Max;
-      ChangeFlag = 1;
-      ChangeTime = Time.Cnt1s;
+      SaveTask(1);
     }
     Key3Flg = 1;
   }
@@ -509,24 +527,16 @@ void SigMode(void){
     }
   }
   else Key3Flg = 0;
-
+  
+  //导航键赋值
   switch(Sta){
   case 0:ColorPoint.bit.Hue = Data;break;
   case 1:ColorPoint.bit.Sat = Data;break;
   case 2:ColorPoint.bit.Brt = Data;break;
   }
   
+  //获取颜色
   GetHSB();
-  
-  if((GetDtTime(ChangeTime,Time.Cnt1s) > 30)&&(ChangeFlag == 1)){//30s to save
-    ChangeFlag = 0;
-    if(ColorPointBak.all != ColorPoint.all){
-      ColorPointBak.all = ColorPoint.all;
-      SaveAll();
-    }
-  }
-  
-  ClearKeySta();
 }
 
 void MainApp(void){
@@ -536,8 +546,8 @@ void MainApp(void){
 //    LinkMode();
 //    break;
   case 1:       //单色模式
-    OutputState = 3;    //不变化
     SigMode();
+    SaveTask(0);
     break;
     
   case 2:       //颜色设置模式
@@ -545,11 +555,15 @@ void MainApp(void){
     break;
     
   default:      //正常模式
-    OutputState = 1;      //正常输出
     NormMode();
   }
+  ClearKeySta();
 }
 
 
-
+void GetID(uint32_t *id){
+  id[0]=*(uint32_t*)(0x1FFFF7AC);
+  id[1]=*(uint32_t*)(0x1FFFF7AC+4);
+  id[2]=*(uint32_t*)(0x1FFFF7AC+8); 
+}
 

@@ -10,4 +10,6 @@ void FlashRead(Uint16* Data,Uint8 Addr,u16 Length);
 void SaveAll(void);
 void LoadAll(void);
 
+void SaveTask(u8 Flag);
+
 #endif 

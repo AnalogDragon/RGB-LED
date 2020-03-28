@@ -19,10 +19,6 @@ void GPIO_config(void){
   GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
   GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_1);
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6|GPIO_Pin_7;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
   //key PA0 PA4 PA5
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_4|GPIO_Pin_5;
@@ -322,7 +318,7 @@ void IWDG_Config(void){
 }
 
 void InitTimer(void){
-//  IWDG_Config();
+  IWDG_Config();
   SysTickConfig();      //1ms SysTick
   Tim1Init(TimeBase-1,1-1);    //定时器中断，用于LED刷新1khz
   Tim3InitPWM(FullVal-1,1-1);//LED PWM 17.7Khz

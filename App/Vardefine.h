@@ -43,13 +43,14 @@ extern u8 OutputIndex;     //输出帧
 extern u8 MaxIndex;        //帧数
 extern u16 OutputFrame;    //当前帧时间
 extern u8 Speed;
+extern u8 Gain;
 
 extern u8 PowerMode;
 
-extern u8 DispPage;            //显示页
+//extern u8 DispPage;        //显示页
 extern u8 BatPct;          //电量
 
-extern u8 Shutdown;            //关机标记
+extern u8 Shutdown;       //关机标记
 
 /*---------------------------------*/
 typedef struct{
@@ -125,6 +126,8 @@ union ColorPoint_UNI{
   u32   all;
   ColorPoint_REG  bit;
 };
+
+
 extern union ColorPoint_UNI ColorPoint;
 
 #endif /* VARDEFINE_H_ */

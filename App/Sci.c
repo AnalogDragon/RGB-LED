@@ -1,5 +1,4 @@
 #include "Sci.h"
-#include "string.h"
 
 UART_DATA_Def UART_DATA = {0};
 
