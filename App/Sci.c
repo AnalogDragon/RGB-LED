@@ -285,9 +285,12 @@ void DoSciData(void){
 }
 
 
+u16 RecTime;
+
 void SciMode(void){
   
   if(UART_DATA.SendLen)return;
+  if(GetDtTime(RecTime,Time.Cnt1min) > 5)Shutdown = 1;//5min Auto off
   
   if(UART_DATA.RecPoint>=2 && UART_DATA.RecBuf[UART_DATA.RecPoint-1]=='\n' && UART_DATA.RecBuf[UART_DATA.RecPoint-2] == '\r'){
     UART_DATA.RecLen = UART_DATA.RecPoint;
@@ -300,12 +303,15 @@ void SciMode(void){
     return;
   }
   else return;
+  
   //Stop Rec
   USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
   
   //Do Link
-  if(UART_DATA.RecLen > 2)
+  if(UART_DATA.RecLen > 2){
+    RecTime = Time.Cnt1min;
     DoSciData();
+  }
   FlashLED(3,1);
   
   //Clear

@@ -20,7 +20,7 @@ u8 Gain = 0;
 
 u8 PowerMode;
 //u8 DispPage;            //显示页
-u8 BatPct = 0;          //电量
+u8 BatSta = 0;          //电量
 
 u8 Shutdown;            //关机标记
 

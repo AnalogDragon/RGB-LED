@@ -8,7 +8,7 @@ void SetPwm(u16 R,u16 G,u16 B){
   if(R > FullVal)R = FullVal;
   if(G > FullVal)G = FullVal;
   if(B > FullVal)B = FullVal;
-  if(BatPct == 0){
+  if(BatSta == 0){
     TIM3->CCR4 = 0;
     TIM3->CCR2 = 0;
     TIM3->CCR1 = 0;
@@ -56,7 +56,7 @@ u8 GetAdcValue(void){
 
 
 void TimeBaseTask(void){
-  static u16 Shutdown = 0;
+  static u16 Shutdown__ = 0;
   Time.Cnt1ms++;
   if(60000 == Time.Cnt1ms)
     Time.Cnt1ms = 0;
@@ -78,8 +78,8 @@ void TimeBaseTask(void){
     }
   }
   if(KEY0){
-    Shutdown++;
-    if(Shutdown >= 12000){//12秒强制关机
+    Shutdown__++;
+    if(Shutdown__ >= 12000){//12秒强制关机
       StateLed(0x3);
       while(KEY0);
       PWRIO = 1;
@@ -87,7 +87,7 @@ void TimeBaseTask(void){
       while(1);
     }
   }
-  else Shutdown = 0;
+  else Shutdown__ = 0;
 }
 
 void GetFlag(void){
@@ -153,8 +153,8 @@ void BatTask(void){
   if(Time.Flag1ms == 0)return;
   
   if(GetAdcValue())//ADC值转换
-    if(BatPct)
-      BatPct = (AdcFilter > 2100);
+    if(BatSta)
+      BatSta = (AdcFilter > 2100);
 }
 
 //开关机响应
@@ -203,8 +203,6 @@ u8 GetAList(u8 num){
 void ValueInit(void){
   OutputState = 0;      //输出
   Shutdown = 0;         //清除关机标记
-  PowerMode = 0;
-  BatPct = 1;
   
   NowList = 0;
   while(GetAList(NowList))NowList++;
@@ -258,6 +256,7 @@ void PowerOn(void){
     ClearFlag();
   }
   
+  BatSta = 1;
   PowerMode = buf1-1;
   
   switch(buf1){
@@ -361,13 +360,16 @@ void DispStaLED(u8 Sta){
   
   if(GetDtTime(TimeBuf,Time.Cnt100ms) < 30)return;
   
-  if(BatPct == 0){
+  if(BatSta == 0){
     FlashLED(1,3);
   }
   else{
     if(PowerMode == 1){//单色
       FlashLED(2,1);
       FlashLED(1,Sta+1);
+    }
+    else if(PowerMode == 2){
+      FlashLED(2,1);
     }
     else{
       FlashLED(2,2);
@@ -620,6 +622,7 @@ void MainApp(void){
     break;
     
   case 2:       //颜色设置模式
+    DispStaLED(0);
     SciMode();
     break;
     

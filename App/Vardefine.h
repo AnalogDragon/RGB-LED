@@ -48,7 +48,7 @@ extern u8 Gain;
 extern u8 PowerMode;
 
 //extern u8 DispPage;        //显示页
-extern u8 BatPct;          //电量
+extern u8 BatSta;          //电量
 
 extern u8 Shutdown;       //关机标记
 
